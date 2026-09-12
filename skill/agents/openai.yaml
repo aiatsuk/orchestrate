@@ -1,0 +1,5 @@
+interface:
+  display_name: "Orchestrate"
+  short_description: "Delegate a task to tiered subagents with specs, gates, reviews and rework"
+policy:
+  allow_implicit_invocation: false
