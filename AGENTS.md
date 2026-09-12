@@ -26,9 +26,21 @@
 - Examples under `examples/` are anonymized: placeholder repository names, no real identifiers.
 - Commit messages follow `type(scope): summary` in the imperative, one change per commit.
 
+## Versioning
+
+- Semantic versioning. Patch: wording and documentation. Minor: protocol, routing table, scripts
+  with backward-compatible options. Major: a change that breaks the spec or report format, a script
+  option, or the run-directory layout.
+- Every change under `skill/` bumps the version in three places: `metadata.version` in
+  `skill/SKILL.md`, the `VERSION` file, and a new top entry in `CHANGELOG.md` with the date.
+  `tests/test_version.py` fails when they disagree.
+- Release: `make tag` runs the tests, then creates the annotated tag `v<VERSION>`; push with
+  `git push --tags`.
+
 ## Definition of done for a change
 
 - [ ] `make test` passes.
 - [ ] If a script changed, its test changed with it.
 - [ ] If the protocol changed, `SKILL.md`, the affected reference file, and the matching example agree.
 - [ ] If the routing table changed, the evidence file exists.
+- [ ] If anything under `skill/` changed, the version is bumped and the changelog has the entry.

@@ -22,8 +22,9 @@
   `followup_task` and `send_message` instead. Close: `close_agent` when exposed; otherwise say so.
 - Run directory: `~/.agents/orchestrate/runs/<date>-<slug>/`. Do not put it under `~/.codex/`, the
   sandbox protects that directory and every write needs an escalation.
-- Effort: the model catalogue lists `low`, `medium`, `high`, `xhigh` for the tier models; the table in
-  `SKILL.md` gives the measured defaults.
+- Effort: the model catalogue lists `low`, `medium`, `high`, `xhigh` for the tier models. The table in
+  `SKILL.md` sets tiers 1 and 2 to `xhigh` and tier 3 to `low`; the 2026-09-12 measurements in
+  `routing.md` were taken with tiers 1 and 2 at `medium`.
 - If the `codex` binary on `PATH` hangs when run without a terminal, try the binary bundled with the
   desktop application; the CLI prints a version string instantly when it works.
 - Usage: token counts are not exposed to the orchestrator. Record thread names and session ids in

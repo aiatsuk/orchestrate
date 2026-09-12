@@ -47,6 +47,12 @@ and opened a task for it.
   of done coincided with a round-zero pass on the async test in the second run.
 - A resumed reviewer for round two cost 10k to 18k tokens against 60k to 80k for a fresh one.
 
+## Configuration decisions after the runs
+
+- 0.2.0: Codex tiers 1 and 2 moved from `medium` to `xhigh` reasoning effort by decision, not by
+  measurement. The medium numbers above stay as the baseline; the next Codex run should record
+  whether tier 1 still needs a rework round at xhigh and what it costs.
+
 ## Hypotheses to confirm before promoting into the table
 
 1. Tier 3 as the default reviewer for tier 2 and 3 work; tier 2 reviewers only for tier 1 work.

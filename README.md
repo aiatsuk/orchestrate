@@ -37,8 +37,8 @@ For a fully autonomous Codex run see the launch line in `skill/references/harnes
 
 | Tier | Claude Code | Codex | Use for |
 |------|-------------|-------|---------|
-| 1 mechanical | haiku | gpt-5.6-luna, medium | fully specified edits with a reference file and a runnable check |
-| 2 standard | sonnet | gpt-5.6-sol, medium | implementation from a clear spec; reviews of tier 1 and 2 work |
+| 1 mechanical | haiku | gpt-5.6-luna, xhigh | fully specified edits with a reference file and a runnable check |
+| 2 standard | sonnet | gpt-5.6-sol, xhigh | implementation from a clear spec; reviews of tier 1 and 2 work |
 | 3 structural | opus | gpt-6-astra, low | structural refactors, hard bugs; reviews of tier 3 work and of the integrated whole |
 | orchestrator | top tier available | gpt-6-astra, xhigh | planning, specs, verification decisions |
 
@@ -70,6 +70,13 @@ tests/                 unit tests for the scripts and repository hygiene (Englis
 AGENTS.md              rules for agents working on this repository; CLAUDE.md imports it
 install.sh             user-scope install for both harnesses
 ```
+
+## Versioning
+
+Semantic versioning. The version lives in `skill/SKILL.md` (frontmatter `metadata.version`), in
+`VERSION`, and as the newest entry of `CHANGELOG.md`; a unit test keeps the three in sync. Every
+release is an annotated git tag `vX.Y.Z` created with `make tag`. Runs report the skill version in
+their final report, so eval results are comparable across versions.
 
 ## License
 
