@@ -4,7 +4,7 @@ description: Orchestrate a task through subagents. Split it into subtasks, write
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.4.0
+  version: 0.4.1
 ---
 
 # Orchestrate

@@ -2,6 +2,11 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.4.1] - 2026-09-13
+
+### Changed
+- Results of the 2026-09-13 two-harness evaluation completed with the addendum on the profile coalescing fix round, recorded as the evidence for the routing hypotheses in `references/routing.md`; no protocol or script change since 0.4.0.
+
 ## [0.4.0] - 2026-09-13
 
 Reliability release after an external review of 0.2.0. Every item below has a regression test in
