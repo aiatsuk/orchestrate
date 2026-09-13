@@ -2,6 +2,20 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.3.0] - 2026-09-13
+
+### Added
+- Named roles for both harnesses: `orchestrate-explorer` (read-only, tier 1), `orchestrate-implementer` (workspace-write), `orchestrate-reviewer` (read-only, tier 3), with `install.sh` linking them into `~/.claude/agents` and `~/.codex/agents`.
+- `evals/codex_usage.py`: attribution of one Codex run from the rollout logs, per thread and model, with cache hit rate and the rate-limit window delta labelled by window length.
+- Delegation gate (root-only versus delegated, real spawns only) and a completion gate before the final report.
+- Explorer phase: task areas are mapped by read-only tier-1 agents before specs are written, keeping the orchestrator context small.
+- Orchestration-overhead protocol in `evals/README.md` with the 2026-09-12 reference point.
+- `install.sh --repo <path> [--force]`: project-scope install that appends an orchestration block to `AGENTS.md` once.
+- `skill/codex/config.example.toml` with the `[agents]` keys the skill relies on; `service_tier` noted as an option.
+
+### Changed
+- Codex orchestrator effort from `xhigh` to `high`; the 2026-09-12 measurement at `xhigh` stays as the baseline.
+
 ## [0.2.0] - 2026-09-12
 
 ### Changed

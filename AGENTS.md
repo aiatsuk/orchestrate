@@ -24,6 +24,7 @@
 - Routing changes require evidence: add a dated file under `evals/results/` first, and promote a
   hypothesis from `skill/references/routing.md` into the routing table only after two runs agree.
 - Examples under `examples/` are anonymized: placeholder repository names, no real identifiers.
+- The three named roles exist for both harnesses with the same instructions; change them together.
 - Commit messages follow `type(scope): summary` in the imperative, one change per commit.
 
 ## Versioning

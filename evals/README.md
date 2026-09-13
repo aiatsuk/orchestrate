@@ -33,6 +33,29 @@ that each tier has a task it should pass and a task it should fail:
 Write the results as a dated file in `results/`. Promote a hypothesis from
 `skill/references/routing.md` into the routing table only after a second run agrees.
 
+## 3. Orchestration overhead (Codex)
+
+Orchestration is not free: the orchestrator thread stays in the loop for the whole run and re-reads
+its context on every response, and every subagent carries its own. Measure the overhead against a
+baseline rather than guessing:
+
+1. Pick three or four tasks in one repository (a single-file fix, a multi-file feature, a
+   cross-component bug, a docs sync). Write the prompts down and reuse them verbatim.
+2. Run each task in three configurations: baseline (orchestrator model alone, `[agents] enabled =
+   false`, no skill), orchestrated (this skill as installed), floor (the cheapest tier alone).
+3. After each run, `python3 evals/codex_usage.py --latest` and record per model: uncached input,
+   cached input, output and reasoning tokens; the number of subagents; wall time; and the rate-limit
+   window delta the script prints (labelled by window length, 5h or 7d).
+4. Repeat each cell two or three times; single samples mislead.
+5. Record the skill version, the tier table in force, and the CLI version.
+
+| Task | Config | Skill version | Orchestrator uncached / cached / out | Subagents uncached / cached / out | Subagents | Wall | Window delta |
+|---|---|---|---|---|---:|---:|---|
+
+Reference point from 2026-09-12 (skill 0.1.0, orchestrator at xhigh): six tasks, 14 threads, 55
+minutes, 1.21M uncached input, 136k output, cache hit 96%, primary window (7d) 0.0% to 3.0%; the
+orchestrator thread was 49% of all tokens.
+
 ## How to run a cell
 
 1. Pick a repository with a real backlog and a scoped gate (analyzer, tests, format).

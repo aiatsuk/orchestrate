@@ -14,5 +14,8 @@
 - Usage: the completion notification reports tokens, tool uses and duration per agent; record them
   in `status.md`, they tune the routing table.
 - Run directory: `~/.claude/orchestrate/runs/<date>-<slug>/`.
+- Named roles: `claude/agents/orchestrate-{explorer,implementer,reviewer}.md` go to `~/.claude/agents/`
+  (user) or `.claude/agents/` (project) and are spawned with `subagent_type`. The reviewer and the
+  explorer have no Edit or Write tool, which is the read-only guarantee on this harness.
 - Install: symlink or copy the `skill/` directory to `~/.claude/skills/orchestrate/` (user scope) or
   `.claude/skills/orchestrate/` in a repo. `./install.sh` at the repository root does the user scope.

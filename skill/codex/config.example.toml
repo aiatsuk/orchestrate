@@ -1,0 +1,17 @@
+# Settings the orchestrate skill relies on in Codex. Merge into ~/.codex/config.toml or a
+# project's .codex/config.toml; do not overwrite an existing config blindly.
+
+# Orchestrator tier
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[agents]
+enabled = true
+# One thread per running task plus reviewers; raise only for genuinely independent waves.
+max_concurrent_threads_per_session = 8
+# Defaults for spawns that do not pass a model; the skill always passes one explicitly.
+default_subagent_model = "gpt-5.6-sol"
+default_subagent_reasoning_effort = "xhigh"

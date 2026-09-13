@@ -53,6 +53,10 @@ and opened a task for it.
   measurement. The medium numbers above stay as the baseline; the next Codex run should record
   whether tier 1 still needs a rework round at xhigh and what it costs.
 
+- 0.3.0: the Codex orchestrator moved from `xhigh` to `high` by decision. In the 2026-09-12 run the
+  orchestrator thread was 49% of all tokens (15.2M of 31.3M, 96% cached) and $19.8 of $36; the
+  reference setup this change follows runs its root at `medium`. Measure the rework count at `high`.
+
 ## Hypotheses to confirm before promoting into the table
 
 1. Tier 3 as the default reviewer for tier 2 and 3 work; tier 2 reviewers only for tier 1 work.

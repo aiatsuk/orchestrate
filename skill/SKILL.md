@@ -4,7 +4,7 @@ description: Orchestrate a task through subagents. Split it into subtasks, write
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.2.0
+  version: 0.3.0
 ---
 
 # Orchestrate
@@ -21,13 +21,31 @@ integration patches when a task passes. Everything else is done by subagents.
 | Action | Claude Code | Codex |
 |--------|-------------|-------|
 | Spawn a subagent | `Agent` tool with `model` and `run_in_background: true` | `spawn_agent` with `model` and `reasoning_effort` |
+| Spawn a named role | `subagent_type: orchestrate-<role>` from `~/.claude/agents` | the role or agent parameter when offered; the run log records it as `agent_role`; still pass `model` and `reasoning_effort` |
 | Wait for it | completion notification | `wait_agent` |
 | Resume with context | `SendMessage` to the agent | `followup_task` or `send_input`, whichever the version exposes |
 | Close | not needed | `close_agent` if exposed |
 | Run directory | `~/.claude/orchestrate/runs/<date>-<slug>/` | `~/.agents/orchestrate/runs/<date>-<slug>/` |
+| Usage attribution | the completion notification per agent | `evals/codex_usage.py --latest` after the run |
 
 Details, launch lines and known quirks: `references/harness-claude.md`, `references/harness-codex.md`.
 Helper scripts live next to this file in `scripts/`; use them instead of ad-hoc shell.
+
+## Delegation gate
+
+Classify the task before anything else:
+
+- **root-only**: one file or one bounded edit, no independent parts, no exploration needed, a
+  reviewer would add nothing. Do it directly, say in one line that the gate chose root-only, skip
+  the rest of this skill.
+- **delegated** when any of these holds: the task spans several files, modules or services; it has
+  two or more independent parts; the repository must be explored before implementing; an
+  independent review or a scoped gate materially reduces risk; the user asked for delegation.
+
+Delegation means a real spawn. Do not describe, simulate or reason about delegation instead of
+calling the spawn tool. If the spawn tool is unavailable or fails, report that and stop; never
+fall back silently to doing the delegated work in the orchestrator thread. Never claim that an
+agent worked unless its spawn succeeded and it returned.
 
 ## Contract
 
@@ -52,15 +70,21 @@ Helper scripts live next to this file in `scripts/`; use them instead of ad-hoc 
    file-scoped gate recipes in specs; the full gate runs once, on the integrated tree, by you.
 3. Read the repo's documentation rules. If docs are part of the definition of done there, each spec
    names the exact doc lines to update, or the run gets a dependent docs task in a later wave.
-4. Prepare one worktree per file-editing task with `scripts/prepare_worktrees.sh`: cut from the
+4. Explore through agents, not in your own context: spawn one read-only `orchestrate-explorer`
+   (tier 1) per task area, all in one wave, in parallel with the worktree preparation below. Each
+   returns files and symbols with absolute paths, the flow the task touches, existing tests and
+   the reference file, scoped gate commands, and the rules that apply, under 60 lines. Specs are
+   written from those reports. The orchestrator thread re-reads its whole context on every
+   response, so evidence that is not needed for a decision must not enter it.
+5. Prepare one worktree per file-editing task with `scripts/prepare_worktrees.sh`: cut from the
    target branch, fetch dependencies, then run the gate once on a clean worktree with
    `scripts/gate.py run` to record the baseline (pre-existing warnings, duration) in `status.md`.
    An agent must start from a green baseline.
-5. Run every repo fact check (`git ls-files`, `rg`) from the repo root; a relative path that does not
+6. Run every repo fact check (`git ls-files`, `rg`) from the repo root; a relative path that does not
    exist there silently returns nothing. Point specs at canonical sources, not generated copies.
-6. Surface every decision the user must make now. The session may be non-interactive: state an
+7. Surface every decision the user must make now. The session may be non-interactive: state an
    assumption and go when a decision does not change the work materially.
-7. If the repo carries its own model-routing document, it overrides the routing table below.
+8. If the repo carries its own model-routing document, it overrides the routing table below.
 
 ## Phase 1: Plan
 
@@ -81,10 +105,24 @@ number of agents per tier.
 | 1 mechanical | `haiku` | `gpt-5.6-luna`, xhigh | Fully specified edits with an exact reference file and a runnable check: simple unit tests, renames, localization keys, boilerplate, surveys. | Design judgment, multi-file wiring, cases derived from stream or timer semantics. |
 | 2 standard | `sonnet` | `gpt-5.6-sol`, xhigh | Implementation from a clear spec: routes, screens, tests including async ones (with the discriminating-test criterion), behaviour-preserving refactors across a few files, docs. Reviews of tier 1 and 2 work. | Structural refactors across many files; features spanning modules. |
 | 3 structural | `opus` | `gpt-6-astra`, low | Structural refactors, feature modules, hard bugs, anything tier 2 failed twice. Reviews of tier 3 work and of the integrated whole. | Nothing in principle; do not avoid it when the task is hard. |
-| orchestrator | the top tier available | `gpt-6-astra`, xhigh | Planning, specs, verification decisions; a subtask only when tier 3 failed twice. | Routine implementation. |
+| orchestrator | the top tier available | `gpt-6-astra`, high | Planning, specs, verification decisions; a subtask only when tier 3 failed twice. | Routine implementation. |
 
 Reviewer tier: at least the implementer's tier. Measured results and open hypotheses, including
 tier 3 as the default reviewer: `references/routing.md`.
+
+## Named roles
+
+Three roles ship with the skill (`claude/agents/*.md`, `codex/agents/*.toml`, installed by
+`install.sh`). Their sandbox is a guarantee, not a request in the prompt.
+
+| Role | Sandbox | Model | Used in |
+|------|---------|-------|---------|
+| `orchestrate-explorer` | read-only | tier 1, pinned | Phase 0, one per task area |
+| `orchestrate-implementer` | workspace-write | passed at spawn from the task's tier | Phase 2 |
+| `orchestrate-reviewer` | read-only | tier 3, pinned | Phase 3, Phase 5 final review |
+
+Spawn a role by name when the harness offers a role parameter; pass `model` and effort explicitly
+in every case, so the run is reproducible when the role file is absent.
 
 ## Spec template
 
@@ -101,8 +139,8 @@ plans, changelogs or memory banks.
 
 ## Phase 2: Dispatch
 
-- Spawn every task of a wave before waiting on any. The spawn message: the spec file's absolute
-  path, "read it in full first", and the hard limits repeated (worktree path and branch, no commit
+- Spawn every task of a wave before waiting on any, as `orchestrate-implementer`. The spawn
+  message: the spec file's absolute path, "read it in full first", and the hard limits repeated (worktree path and branch, no commit
   or push, no full-gate recipes, no edits outside scope, no AI or tool names).
 - A dependent task is spawned only after its dependencies passed verification. Scaffold its
   worktree on every patch it describes, committed there as a temporary scaffolding commit by path,
@@ -117,8 +155,8 @@ When a task returns:
    first; do not guess what it did.
 2. Mechanical gate: run the spec's gate commands yourself inside the agent's worktree with
    `scripts/gate.py run`. Paste failures verbatim into the rework message.
-3. Reviewer: write `reviewer-brief.md` once per run from `references/reviewer-brief.md`. Spawn a
-   read-only reviewer at the reviewer tier pointed at the brief, the spec and the worktree, listing
+3. Reviewer: write `reviewer-brief.md` once per run from `references/reviewer-brief.md`. Spawn
+   `orchestrate-reviewer` at the reviewer tier pointed at the brief, the spec and the worktree, listing
    the implementer's claims it must verify against the code rather than trust. Save the verdict as
    `review-<#>.md` with the reviewer's tier, and its usage if the harness reports it.
 4. Gate green and reviewer PASS means done. Export the patch immediately with
@@ -148,14 +186,20 @@ When a task returns:
    saved patch; keep the integration worktree. Close agents if the harness exposes it.
 5. Commit only if the user asked: by explicit path, conventional message, no AI or tool names, no
    attribution trailers. Otherwise name the staged integration branch in the report.
-6. Report the wave as a table, then a final recap written also to `final-report.md`:
+6. Completion gate before the final report: every required agent was spawned and either returned
+   or explicitly failed; no agent is still running; every material finding was integrated or
+   listed as a follow-up; the full gate and the final review ran on the integrated tree; nothing
+   is claimed that a spawn or a gate log does not support.
+7. Report the wave as a table, then a final recap written also to `final-report.md`:
 
 | # | Task | Tier | Rounds | Gate | Review | Status | Evidence |
 |---|------|------|--------|------|--------|--------|----------|
 
 Include per task the implementer's and the reviewer's tier and duration; token counts when the
-harness reports them, otherwise the session ids so usage can be attributed later. State the skill
-version from this file's frontmatter, so results can be compared across versions.
+harness reports them, otherwise the session ids so usage can be attributed later. On Codex, run
+`evals/codex_usage.py --latest` after the run and paste its per-model table and the rate-limit
+window delta. State the skill version from this file's frontmatter, so results can be compared
+across versions.
 
 ## Anti-patterns
 
@@ -166,3 +210,5 @@ version from this file's frontmatter, so results can be compared across versions
 - Marking a task done without pasted gate output and a reviewer verdict.
 - Reporting progress for an agent that has not returned.
 - Committing subagent work without the user asking.
+- Narrating a delegation that never called the spawn tool.
+- Reading the repository broadly in the orchestrator thread instead of through explorers.

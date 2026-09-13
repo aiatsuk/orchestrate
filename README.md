@@ -13,7 +13,8 @@ It never triggers on its own.
 ```sh
 git clone https://github.com/aiatsuk/orchestrate
 cd orchestrate
-./install.sh          # symlinks skill/ into ~/.claude/skills/orchestrate and ~/.agents/skills/orchestrate
+./install.sh          # symlinks skill/ into both harnesses' skill dirs and the roles into ~/.claude/agents and ~/.codex/agents
+./install.sh --repo ~/src/app   # project scope: copies the skill and roles, appends an orchestration block to AGENTS.md
 make test             # unit tests, no dependencies beyond python3 and git
 ```
 
@@ -40,14 +41,30 @@ For a fully autonomous Codex run see the launch line in `skill/references/harnes
 | 1 mechanical | haiku | gpt-5.6-luna, xhigh | fully specified edits with a reference file and a runnable check |
 | 2 standard | sonnet | gpt-5.6-sol, xhigh | implementation from a clear spec; reviews of tier 1 and 2 work |
 | 3 structural | opus | gpt-6-astra, low | structural refactors, hard bugs; reviews of tier 3 work and of the integrated whole |
-| orchestrator | top tier available | gpt-6-astra, xhigh | planning, specs, verification decisions |
+| orchestrator | top tier available | gpt-6-astra, high | planning, specs, verification decisions |
 
 Measured results behind the table and the open hypotheses: `skill/references/routing.md`.
 
+## Named roles
+
+`orchestrate-explorer` (read-only, tier 1) maps a task area before the spec is written;
+`orchestrate-implementer` (workspace-write, model passed per task) executes a spec in its own
+worktree; `orchestrate-reviewer` (read-only, tier 3) verifies against the spec and runs the gate
+itself. Role files live in `skill/claude/agents/` and `skill/codex/agents/`; the sandbox is enforced
+by the harness, not by the prompt.
+
+## Measuring a run
+
+```sh
+python3 evals/codex_usage.py --list --date 2026-09-12   # sessions that spawned subagents
+python3 evals/codex_usage.py --latest                   # per thread, per model, cache rate, rate-limit window delta
+python3 evals/score.py <run-dir>                        # protocol completeness of a run directory
+```
+
 ## How it works
 
-1. **Intake**: read the repo's agent instructions and gate commands, prepare one worktree per task
-   with dependencies fetched, record a baseline gate run.
+1. **Gate and intake**: decide root-only versus delegated; read the repo's agent instructions and gate
+   commands; explorers map each task area; one worktree per task with dependencies fetched; a baseline gate run.
 2. **Plan**: a table of tasks, scopes, tiers, dependencies, gates and reviewer tiers.
 3. **Specs**: one file per task from `skill/references/spec-template.md`, absolute paths, a
    definition of done with a scoped gate, a mandatory report format.
@@ -64,7 +81,8 @@ Measured results behind the table and the open hypotheses: `skill/references/rou
 ```
 skill/                 the skill: SKILL.md, references/, scripts/, agents/openai.yaml
 skill/scripts/         gate.py (gate runner and analyzer delta), integrate.sh, prepare_worktrees.sh
-evals/                 scorer for run directories, task archetypes, dated results
+skill/claude/agents/   named roles for Claude Code; skill/codex/agents/ and config.example.toml for Codex
+evals/                 score.py (protocol completeness), codex_usage.py (usage and rate-limit attribution), task archetypes, dated results
 examples/              a brief, a plan, a spec, a reviewer brief, a verdict, a status trail, a final report
 tests/                 unit tests for the scripts and repository hygiene (English only, no personal paths)
 AGENTS.md              rules for agents working on this repository; CLAUDE.md imports it
