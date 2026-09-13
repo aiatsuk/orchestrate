@@ -4,7 +4,7 @@ description: Orchestrate a task through subagents. Split it into subtasks, write
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.4.1
+  version: 0.5.0
 ---
 
 # Orchestrate
@@ -82,7 +82,8 @@ succeeded and it returned.
 5. Prepare one worktree per file-editing task with `scripts/prepare_worktrees.sh`: cut from the
    target branch, fetch dependencies, then run the gate once on a clean worktree with
    `scripts/gate.py run` to record the baseline (pre-existing warnings, duration) in `status.md`.
-   An agent must start from a green baseline.
+   Each gate run gets its own attempt directory (`<label>/`, `<label>-r2/`, ...) so logs are never
+   overwritten. An agent must start from a green baseline.
 6. Run every repo fact check (`git ls-files`, `rg`) from the repo root; a relative path that does not
    exist there silently returns nothing. Point specs at canonical sources, not generated copies.
 7. Surface every decision the user must make now. The session may be non-interactive: state an
@@ -116,7 +117,10 @@ tier 3 as the default reviewer: `references/routing.md`.
 ## Named roles
 
 Three roles ship with the skill (`claude/agents/*.md`, `codex/agents/*.toml`, installed by
-`install.sh`). Their sandbox is a guarantee, not a request in the prompt.
+`install.sh`). On Codex the reviewer's and explorer's `read-only` sandbox is enforced by the harness.
+On Claude Code the roles lack the Edit and Write tools but keep Bash, so read-only there is a
+convention the prompt states, not a guarantee; `verify-clean` on the worktree after a review is the
+mechanical check that nothing changed.
 
 | Role | Sandbox | Model | Used in |
 |------|---------|-------|---------|

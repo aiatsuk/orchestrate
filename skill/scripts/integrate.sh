@@ -7,11 +7,13 @@
 #       Apply the patches in order on a temporary worktree cut from the integration worktree's
 #       current index (so a later patch may depend on an earlier one). If every patch applies, the
 #       resulting tree is adopted into the integration worktree's index and files; if any fails,
-#       nothing in the integration worktree changes. Only the patches' files are staged.
+#       nothing in the integration worktree changes. Only the patches' files are staged. Adoption is
+#       refused when it would overwrite an untracked or ignored file present in the worktree.
 #   integrate.sh verify-clean <worktree> <patch> [--scope <pathspec> ...]
 #       Exit 0 only when the worktree has no unstaged changes and no untracked files, its staged
-#       diff equals <patch> byte for byte, and (with --scope) every staged path matches one of the
-#       pathspecs. This is the check to run before a worktree is removed.
+#       diff equals <patch> byte for byte, and (with --scope) every staged path, including the old
+#       path of a rename, matches one of the pathspecs. This is the check to run before a worktree
+#       is removed.
 #   integrate.sh same-tree <worktree-a> <worktree-b>
 #       Exit 0 when both worktrees' staged trees are identical (integration versus a replay).
 set -euo pipefail
@@ -44,6 +46,13 @@ case "$cmd" in
       echo "applied $p"
     done
     new_tree=$(git -C "$tmp/wt" write-tree)
+    # refuse to overwrite files that exist in the integration worktree but are not tracked (ignored or stray)
+    clobber=""
+    while IFS= read -r path; do
+      [ -n "$path" ] || continue
+      if [ -e "$wt/$path" ] && ! git -C "$wt" ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then clobber="$clobber $path"; fi
+    done < <(git -C "$wt" diff --name-only --diff-filter=A "$base_tree" "$new_tree")
+    [ -z "$clobber" ] || die "would overwrite untracked or ignored files in the integration worktree:$clobber"
     git -C "$wt" read-tree -m -u "$new_tree"
     echo "tree $(git -C "$wt" write-tree)"
     ;;
@@ -58,8 +67,10 @@ case "$cmd" in
     if [ -n "$untracked" ]; then echo "untracked files present:"; echo "$untracked" | sed 's/^/  /'; status=1; fi
     if ! git -C "$wt" diff --cached -M --binary | cmp -s - "$patch"; then echo "staged diff differs from $patch"; status=1; fi
     if [ ${#scopes[@]} -gt 0 ]; then
-      allowed=$(git -C "$wt" diff --cached --name-only -- "${scopes[@]}" | sort)
-      staged=$(git -C "$wt" diff --cached --name-only | sort)
+      # --no-renames: a rename shows as a deletion of the old path and an addition of the new one,
+      # so moving a file from outside the scope into it is caught on the old path
+      allowed=$(git -C "$wt" diff --cached --no-renames --name-only -- "${scopes[@]}" | sort)
+      staged=$(git -C "$wt" diff --cached --no-renames --name-only | sort)
       outside=$(comm -23 <(echo "$staged") <(echo "$allowed"))
       if [ -n "$outside" ]; then echo "staged paths outside the allowed scope:"; echo "$outside" | sed 's/^/  /'; status=1; fi
     fi

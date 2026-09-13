@@ -50,8 +50,9 @@ Measured results behind the table and the open hypotheses: `skill/references/rou
 `orchestrate-explorer` (read-only, tier 1) maps a task area before the spec is written;
 `orchestrate-implementer` (workspace-write, model passed per task) executes a spec in its own
 worktree; `orchestrate-reviewer` (read-only, tier 3) verifies against the spec and runs the gate
-itself. Role files live in `skill/claude/agents/` and `skill/codex/agents/`; the sandbox is enforced
-by the harness, not by the prompt.
+itself. Role files live in `skill/claude/agents/` and `skill/codex/agents/`. Read-only is enforced
+by the sandbox on Codex; on Claude Code the roles keep Bash, so it is a convention checked
+afterwards with `verify-clean`.
 
 ## Measuring a run
 
@@ -91,14 +92,17 @@ install.sh             user-scope install for both harnesses
 
 ## What the scripts enforce and what the prompt enforces
 
-The scripts enforce: any non-zero gate exit is a failure, including signals; gate logs are never
-overwritten; the analyzer delta compares issue lists, not exit codes; integration is all or nothing
-and stages only the patches' files; a worktree is removed only after `verify-clean` proved that its
-staged diff equals the saved patch, nothing is unstaged or untracked, and every staged path is
-inside the spec's scope.
+The scripts enforce: any non-zero gate exit is a failure, including signals and failures inside a
+pipeline; every gate run gets its own attempt directory, so logs are never overwritten even after an
+interrupted or concurrent attempt; the analyzer delta compares issue lists keyed by file and text,
+not exit codes; integration is all or nothing, stages only the patches' files and refuses to
+overwrite untracked or ignored files; a worktree is removed only after `verify-clean` proved that
+its staged diff equals the saved patch, nothing is unstaged or untracked, and every staged path,
+including the old path of a rename, is inside the spec's scope.
 
 The prompt enforces, and the scripts cannot: reviewer independence, the two-round limit, the
-delegation gate, and that the orchestrator does not do the work itself. Treat the run directory as
+delegation gate, that the orchestrator does not do the work itself, and on Claude Code that a
+reviewer does not write through Bash. Treat the run directory as
 the evidence and read the staged diff before merging; an orchestrated run is not a substitute for
 review of the result.
 

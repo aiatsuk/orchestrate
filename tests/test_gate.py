@@ -17,9 +17,9 @@ class GateRunTests(unittest.TestCase):
             proc = subprocess.run([sys.executable, str(GATE), "run", "--run-dir", str(run_dir), "--label", "t1",
                                    "--", "echo hello", "echo oops >&2; exit 3"], capture_output=True, text=True)
             self.assertEqual(proc.returncode, 1)
-            self.assertEqual((run_dir / "t1-1.log").read_text(), "hello\n")
-            self.assertIn("oops", (run_dir / "t1-2.log").read_text())
-            results = json.loads((run_dir / "t1.json").read_text())
+            self.assertEqual((run_dir / "t1" / "1.log").read_text(), "hello\n")
+            self.assertIn("oops", (run_dir / "t1" / "2.log").read_text())
+            results = json.loads((run_dir / "t1" / "result.json").read_text())
             self.assertEqual([r["rc"] for r in results], [0, 3])
             status = (run_dir / "status.md").read_text().splitlines()
             self.assertEqual(len(status), 2)

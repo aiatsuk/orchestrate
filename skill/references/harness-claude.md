@@ -16,6 +16,8 @@
 - Run directory: `~/.claude/orchestrate/runs/<date>-<slug>/`.
 - Named roles: `claude/agents/orchestrate-{explorer,implementer,reviewer}.md` go to `~/.claude/agents/`
   (user) or `.claude/agents/` (project) and are spawned with `subagent_type`. The reviewer and the
-  explorer have no Edit or Write tool, which is the read-only guarantee on this harness.
+  explorer have no Edit or Write tool but do have Bash, so they can still change files through the
+  shell; read-only is a convention here, not a sandbox. After a review, run `integrate.sh
+  verify-clean` on the worktree to confirm the staged diff is unchanged.
 - Install: symlink or copy the `skill/` directory to `~/.claude/skills/orchestrate/` (user scope) or
   `.claude/skills/orchestrate/` in a repo. `./install.sh` at the repository root does the user scope.

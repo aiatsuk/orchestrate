@@ -2,6 +2,23 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.5.0] - 2026-09-13
+
+Second reliability release after the external review of 0.4.1. Each item has a regression test.
+The gate's run-directory layout changed, hence the minor bump before 1.0.
+
+### Fixed
+- `gate.py`: commands ran under a plain shell, so a failure inside a pipeline (`false | cat`, a test piped through `tee`) counted as success; commands now run under `bash -o pipefail`.
+- `gate.py`: log overwrite protection only worked after a completed attempt; an interrupted attempt or two concurrent runs with one label overwrote logs. Each run now reserves an attempt directory atomically (`<label>/`, `<label>-r2/`, ...) with `<n>.log` and `result.json` inside.
+- `gate.py delta`: ESLint stylish output puts the file on its own line, so the same issue in a second file, or twice, was not new; issues are now keyed by file and text and counted.
+- `integrate.sh verify-clean --scope`: a rename from outside the scope into it passed; the check now sees the old path of a rename.
+- `integrate.sh apply`: adoption could overwrite an untracked or ignored file present in the integration worktree; it now refuses and leaves the worktree unchanged.
+- `install.sh --uninstall`: a symlink whose target merely started with the skill path counted as ours; ownership is now an exact path or a path inside it.
+- CI: the signal test used a nested shell that reports 143 on Linux; the gate is now killed directly.
+
+### Changed
+- Documentation no longer calls the Claude Code reviewer read-only: the role lacks Edit and Write but keeps Bash; `verify-clean` after a review is the mechanical check. Codex roles remain sandbox-enforced.
+
 ## [0.4.1] - 2026-09-13
 
 ### Changed

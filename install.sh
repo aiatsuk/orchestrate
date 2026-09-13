@@ -20,7 +20,7 @@ link() { # link <source> <target>
   elif [ -e "$t" ]; then local bak="$t.bak-$(date +%Y%m%d-%H%M%S)"; mv "$t" "$bak"; echo "moved existing $t to $bak"; fi
   ln -s "$s" "$t"; echo "linked $t -> $s"
 }
-unlink_if_ours() { local t=$1; if [ -L "$t" ] && [[ "$(readlink "$t")" == "$src"* ]]; then rm "$t"; echo "removed $t"; elif [ -e "$t" ] || [ -L "$t" ]; then echo "not ours, left alone: $t"; fi; }
+unlink_if_ours() { local t=$1 dest; if [ -L "$t" ]; then dest=$(readlink "$t"); if [ "$dest" = "$src" ] || [[ "$dest" == "$src/"* ]]; then rm "$t"; echo "removed $t"; return; fi; fi; if [ -e "$t" ] || [ -L "$t" ]; then echo "not ours, left alone: $t"; fi; }
 
 user_targets() { # symlink targets
   echo "$src|$HOME/.claude/skills/orchestrate"

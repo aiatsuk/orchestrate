@@ -37,18 +37,28 @@ def make_patch(repo: Path, branch: str, edits: dict, out: Path) -> Path:
 class GateReliabilityTests(unittest.TestCase):
     def test_signal_killed_command_is_a_failure(self):
         with tempfile.TemporaryDirectory() as tmp:
-            proc = gate("run", "--run-dir", tmp, "--label", "sig", "--", "sh -c 'kill -TERM $$'")
+            proc = gate("run", "--run-dir", tmp, "--label", "sig", "--", "kill -TERM $$")
             self.assertEqual(proc.returncode, 1, proc.stdout)
             self.assertIn("killed by signal 15", proc.stdout)
             self.assertIn("killed by signal 15", (Path(tmp) / "status.md").read_text())
 
-    def test_rerun_does_not_overwrite_earlier_logs(self):
+    def test_failure_inside_a_pipeline_is_a_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = gate("run", "--run-dir", tmp, "--label", "pipe", "--", "false | cat", "sh -c 'exit 3' | tee /dev/null")
+            self.assertEqual(proc.returncode, 1, proc.stdout)
+            results = json.loads((Path(tmp) / "pipe" / "result.json").read_text())
+            self.assertEqual([r["rc"] for r in results], [1, 3])
+
+    def test_rerun_and_interrupted_attempts_never_overwrite_logs(self):
         with tempfile.TemporaryDirectory() as tmp:
             gate("run", "--run-dir", tmp, "--label", "t", "--", "echo first")
-            gate("run", "--run-dir", tmp, "--label", "t", "--", "echo second")
-            self.assertEqual((Path(tmp) / "t-1.log").read_text(), "first\n")
-            self.assertEqual((Path(tmp) / "t-r2-1.log").read_text(), "second\n")
-            self.assertTrue((Path(tmp) / "t-r2.json").is_file())
+            # an interrupted attempt: a log exists but no result.json
+            (Path(tmp) / "t-r2").mkdir(); (Path(tmp) / "t-r2" / "1.log").write_text("partial\n")
+            gate("run", "--run-dir", tmp, "--label", "t", "--", "echo third")
+            self.assertEqual((Path(tmp) / "t" / "1.log").read_text(), "first\n")
+            self.assertEqual((Path(tmp) / "t-r2" / "1.log").read_text(), "partial\n")
+            self.assertEqual((Path(tmp) / "t-r3" / "1.log").read_text(), "third\n")
+            self.assertTrue((Path(tmp) / "t-r3" / "result.json").is_file())
 
     def test_delta_sees_eslint_style_warnings(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -57,7 +67,20 @@ class GateReliabilityTests(unittest.TestCase):
             c.write_text(b.read_text() + "  40:1  error  'x' is not defined  no-undef\n")
             proc = gate("delta", "--baseline", str(b), "--current", str(c))
             self.assertEqual(proc.returncode, 1)
-            self.assertIn("NEW: 40:1  error", proc.stdout)
+            self.assertIn("NEW: src/a.js: 40:1  error", proc.stdout)
+
+    def test_delta_counts_the_same_issue_in_another_file_or_twice(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            b = Path(tmp) / "b.log"; c = Path(tmp) / "c.log"
+            warning = "  12:3  warning  Unexpected console statement  no-console\n"
+            b.write_text("src/a.js\n" + warning)
+            c.write_text("src/a.js\n" + warning + "src/b.js\n" + warning)
+            proc = gate("delta", "--baseline", str(b), "--current", str(c))
+            self.assertEqual(proc.returncode, 1, proc.stdout)
+            self.assertIn("new=1", proc.stdout); self.assertIn("NEW: src/b.js:", proc.stdout)
+            c.write_text("src/a.js\n" + warning + warning)
+            proc = gate("delta", "--baseline", str(b), "--current", str(c))
+            self.assertEqual(proc.returncode, 1); self.assertIn("new=1", proc.stdout)
 
 
 class IntegrateReliabilityTests(unittest.TestCase):
@@ -131,6 +154,40 @@ class IntegrateReliabilityTests(unittest.TestCase):
             self.assertEqual(proc.returncode, 1); self.assertIn("staged diff differs", proc.stdout)
 
 
+    def test_verify_clean_scope_sees_the_old_path_of_a_rename(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = make_repo(Path(tmp) / "repo")
+            wt = Path(tmp) / "task"
+            git("worktree", "add", "-q", "-b", "task", str(wt), "main", cwd=repo)
+            (wt / "allowed").mkdir()
+            git("mv", "a.txt", "allowed/a.txt", cwd=wt)
+            patch = Path(tmp) / "t.patch"
+            integrate("export", str(wt), str(patch))
+            proc = integrate("verify-clean", str(wt), str(patch), "--scope", "allowed/")
+            self.assertEqual(proc.returncode, 1, proc.stdout)
+            self.assertIn("a.txt", proc.stdout)
+            self.assertEqual(integrate("verify-clean", str(wt), str(patch), "--scope", "allowed/", "--scope", "a.txt").returncode, 0)
+
+    def test_apply_refuses_to_overwrite_an_ignored_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = make_repo(Path(tmp) / "repo")
+            (repo / ".gitignore").write_text("build.log\n"); git("add", "-A", cwd=repo); git("commit", "-q", "-m", "ignore", cwd=repo)
+            patch = Path(tmp) / "a.patch"
+            wt = Path(tmp) / "task-a"
+            git("worktree", "add", "-q", "-b", "task-a", str(wt), "main", cwd=repo)
+            (wt / "build.log").write_text("tracked now\n")
+            git("add", "-f", "build.log", cwd=wt)  # force: the path is ignored on main
+            integrate("export", str(wt), str(patch))
+            integ = Path(tmp) / "integ"
+            git("worktree", "add", "-q", "-b", "integration", str(integ), "main", cwd=repo)
+            (integ / "build.log").write_text("local ignored content\n")
+            proc = integrate("apply", str(integ), str(patch))
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("would overwrite", proc.stderr)
+            self.assertEqual((integ / "build.log").read_text(), "local ignored content\n")
+            self.assertEqual(git("diff", "--cached", "--name-only", cwd=integ), "")
+
+
 class PrepareAndInstallReliabilityTests(unittest.TestCase):
     def test_deps_log_goes_to_log_dir_outside_worktree(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -145,7 +202,8 @@ class PrepareAndInstallReliabilityTests(unittest.TestCase):
     def test_uninstall_leaves_foreign_symlinks_alone(self):
         with tempfile.TemporaryDirectory() as home:
             foreign = Path(home) / ".claude" / "skills"; foreign.mkdir(parents=True)
-            target = Path(home) / "elsewhere"; target.mkdir()
+            # a sibling path that merely starts with the repo's skill path must not count as ours
+            target = Path(str(REPO / "skill") + "-other")
             (foreign / "orchestrate").symlink_to(target)
             env = {**os.environ, "HOME": home}
             proc = subprocess.run([str(INSTALL), "--uninstall"], capture_output=True, text=True, env=env)
