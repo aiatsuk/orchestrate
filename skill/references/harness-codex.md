@@ -6,15 +6,18 @@
   so use a model and effort from the orchestrator tier):
 
   ```sh
-  codex exec --skip-git-repo-check -C <parent dir of the worktrees> --add-dir <home> \
+  codex exec --skip-git-repo-check -C <parent dir of the worktrees> \
+    --add-dir <run dir> --add-dir <dependency caches the gate writes to> \
     -s workspace-write -c sandbox_workspace_write.network_access=true \
     -c agents.max_concurrent_threads_per_session=8 \
     -m gpt-6-astra -c model_reasoning_effort=high \
     -o <run dir>/final-message.md '$orchestrate Run the brief at <absolute path>. Read the skill first.'
   ```
 
-  `exec` has no approval flag; an action that needs a fresh approval fails, so give the sandbox every
-  path the run writes to (`--add-dir`) and network access. Run it detached (`nohup ... &`) and watch
+  `exec` has no approval flag; an action that needs a fresh approval fails, so give the sandbox the
+  paths the run writes to and nothing more: the worktree parent (`-C`), the run directory, and the
+  dependency caches the gate writes to (for Flutter: the pub cache and the SDK cache). Do not add
+  the whole home directory. Run it detached (`nohup ... &`) and watch
   `status.md`; a run of five to six tasks takes about an hour.
 - Spawn: `spawn_agent` with `model` and `reasoning_effort` per call; explicit values override
   `agents.default_subagent_model` and `agents.default_subagent_reasoning_effort`.

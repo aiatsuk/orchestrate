@@ -20,6 +20,8 @@ class PrepareWorktreesTests(unittest.TestCase):
             for slug in ("one", "two"):
                 wt = parent / f"feature-run-{slug}"
                 self.assertTrue((wt / "deps-ok").exists(), str(wt))
+                self.assertFalse((wt / ".deps.log").exists(), "deps log must not be inside the worktree")
+                self.assertTrue(Path(str(wt) + ".deps.log").is_file())
                 self.assertEqual(git("rev-parse", "--abbrev-ref", "HEAD", cwd=wt).strip(), f"feature/run/{slug}")
 
     def test_deps_failure_is_reported(self):

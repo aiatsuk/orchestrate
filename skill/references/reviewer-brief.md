@@ -9,6 +9,9 @@ Check the diff against every item of the spec's Definition of done and every Con
   throw"; fakes follow the repo's convention; no production file changed unless the spec allows it;
 - for refactors: behaviour is preserved; every listed site handled or explicitly reported; no
   formatting churn in untouched code;
+- for refactors that move async coordination (in-flight slots, coalescing, retries, cancellation):
+  reason about same-turn event pairs against a fake that completes synchronously or immediately;
+  green state assertions do not prove the collaborator was called once;
 - no AI or tool names anywhere in the diff.
 
 Verify the implementer's claims listed by the orchestrator against the code; do not trust the

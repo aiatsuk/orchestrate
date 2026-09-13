@@ -4,7 +4,7 @@ description: Orchestrate a task through subagents. Split it into subtasks, write
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.3.1
+  version: 0.4.0
 ---
 
 # Orchestrate
@@ -163,8 +163,11 @@ When a task returns:
    `orchestrate-reviewer` at the reviewer tier pointed at the brief, the spec and the worktree, listing
    the implementer's claims it must verify against the code rather than trust. Save the verdict as
    `review-<#>.md` with the reviewer's tier, and its usage if the harness reports it.
-4. Gate green and reviewer PASS means done. Export the patch immediately with
-   `scripts/integrate.sh export`. Anything else goes to Phase 4.
+4. Gate green and reviewer PASS means done. Run `scripts/integrate.sh verify-clean <worktree>
+   <patch> --scope <paths from the spec>` after exporting with `scripts/integrate.sh export`: it
+   fails on unstaged or untracked files, on a staged diff that differs from the patch, and on any
+   staged path outside the spec's scope. A stray file staged by the implementer is a defect, not
+   something to clean up silently. Anything else goes to Phase 4.
 
 ## Phase 4: Rework
 
@@ -180,14 +183,17 @@ When a task returns:
 ## Phase 5: Integrate and report
 
 1. Integrate on a dedicated worktree and branch cut from the target branch, never in the user's
-   checkout: `scripts/integrate.sh apply` checks all patches first, then applies each one after its
-   review passed.
+   checkout: `scripts/integrate.sh apply` applies the reviewed patches in dependency order on a
+   temporary worktree and adopts the result only if every patch applied; a failure leaves the
+   integration worktree unchanged and names the patch. It stages only the patches' files.
 2. Run the full gate once on the integrated tree and compare the analyzer's issue list against the
    baseline with `scripts/gate.py delta`, not just the exit code; a new info-level issue is a
    failure and becomes a new task.
 3. For a multi-task change, spawn one final review of the whole integrated diff at tier 3.
-4. Remove task worktrees after `scripts/integrate.sh same-tree` confirms the staged diff equals the
-   saved patch; keep the integration worktree. Close agents if the harness exposes it.
+4. Remove a task worktree only after `scripts/integrate.sh verify-clean <worktree> <patch>` passed
+   (staged diff equals the saved patch, nothing unstaged or untracked); `same-tree` compares two
+   worktrees' staged trees and is for integration-versus-replay checks, not for cleanup. Keep the
+   integration worktree. Close agents if the harness exposes it.
 5. Commit only if the user asked: by explicit path, conventional message, no AI or tool names, no
    attribution trailers. Otherwise name the staged integration branch in the report.
 6. Completion gate before the final report: every required agent was spawned and either returned
@@ -212,6 +218,7 @@ across versions.
 - Reviewer and implementer being the same agent.
 - Two agents editing the same files in parallel.
 - Marking a task done without pasted gate output and a reviewer verdict.
+- Removing a worktree on the strength of a tree comparison instead of `verify-clean`.
 - Reporting progress for an agent that has not returned.
 - Committing subagent work without the user asking.
 - Narrating a delegation that never called the spawn tool.

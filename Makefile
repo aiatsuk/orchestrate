@@ -4,7 +4,8 @@ test:
 	python3 -m unittest discover -s tests -p 'test_*.py' -v
 
 check:
-	python3 -m unittest tests/test_hygiene.py tests/test_version.py -v
+	python3 -m unittest discover -s tests -p 'test_hygiene.py' -v
+	python3 -m unittest discover -s tests -p 'test_version.py' -v
 
 # make score RUN=<run-dir>
 score:

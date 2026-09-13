@@ -2,6 +2,25 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.4.0] - 2026-09-13
+
+Reliability release after an external review of 0.2.0. Every item below has a regression test in
+`tests/test_reliability.py` that reproduced the defect first.
+
+### Fixed
+- `gate.py`: a command killed by a signal (negative return code) was reported as success; any non-zero code now fails, and the outcome names the signal.
+- `gate.py`: re-running a label overwrote earlier logs; repeated labels get `-r2`, `-r3` suffixes.
+- `gate.py delta`: ESLint-style `line:col  warning` lines were invisible to the default issue pattern.
+- `integrate.sh apply`: patches were checked one by one against the base, so a patch that depended on an earlier one was rejected, and a conflict mid-sequence left the integration worktree half applied with conflict markers. Patches now apply in order on a temporary worktree and the result is adopted whole or not at all; only the patches' files are staged.
+- `prepare_worktrees.sh`: the dependency log was written inside the worktree where `git add -A` would stage it; it goes to `--log-dir` (default: next to the worktree).
+- `install.sh --uninstall` removed any symlink at the target path; it now removes only links that point into this repository.
+
+### Added
+- `integrate.sh verify-clean <worktree> <patch> [--scope <pathspec>...]`: the check before a worktree is removed (staged diff equals the patch byte for byte, nothing unstaged or untracked, staged paths inside the scope). `same-tree` is kept for integration-versus-replay comparison only.
+- Reviewer brief: refactors that move async coordination must be checked with same-turn event pairs against fakes that complete synchronously.
+- README section on what the scripts enforce and what only the prompt enforces; least-privilege `--add-dir` guidance for Codex.
+- Routing evidence: the 2026-09-13 two-harness run in `evals/results/` and `references/routing.md`.
+
 ## [0.3.1] - 2026-09-13
 
 ### Fixed

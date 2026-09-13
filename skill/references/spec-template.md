@@ -29,7 +29,9 @@ Interfaces that must not change: <list or "none">
 - [ ] `<scoped gate command>` passes with zero new warnings (baseline: <n> pre-existing, listed in status.md)
 
 ## Finish
-Run `git add -A` inside your worktree so new files show in `git diff --cached`. Do not commit.
+Run `git add -A` inside your worktree, then `git status --porcelain`: every listed path must be
+inside the scope above. Unstage and delete anything else (logs, scratch files) before you report.
+Do not commit.
 
 ## Report (mandatory, in this order)
 1. Files changed, as a list with one line each on what changed.

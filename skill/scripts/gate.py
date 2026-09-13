@@ -7,7 +7,9 @@ Usage:
 
 `run` executes each CMD through the shell, writes `<label>-<n>.log` and `<label>.json` into the
 run directory, appends one line per command to the status file (default `<run-dir>/status.md`),
-and exits non-zero if any command failed.
+and exits non-zero if any command failed. Any non-zero exit counts as a failure, including a
+negative code (the command was killed by a signal). A label that already has logs gets a numbered
+suffix (`<label>-r2`, `-r3`, ...) so earlier logs are never overwritten.
 
 `delta` extracts issue lines from two analyzer logs and prints the ones that are new in `current`.
 It exits 1 when there is at least one new issue, so it can serve as a gate on its own.
@@ -22,7 +24,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-DEFAULT_ISSUE_REGEX = r"^\s*(info|warning|error)\b"
+# Dart/Flutter analyzer lines start with the severity; ESLint stylish lines start with line:col.
+DEFAULT_ISSUE_REGEX = r"^\s*(info|warning|error)\b|^\s*\d+:\d+\s+(warning|error)\b"
 
 
 def _now() -> str:
@@ -33,21 +36,33 @@ def run(args: argparse.Namespace) -> int:
     run_dir = Path(args.run_dir).expanduser().resolve()
     run_dir.mkdir(parents=True, exist_ok=True)
     status = Path(args.status) if args.status else run_dir / "status.md"
+    label = unique_label(run_dir, args.label)
     results = []
-    worst = 0
+    failed = False
     for index, cmd in enumerate(args.commands, start=1):
-        log = run_dir / f"{args.label}-{index}.log"
+        log = run_dir / f"{label}-{index}.log"
         start = dt.datetime.now()
         proc = subprocess.run(cmd, shell=True, cwd=args.cwd, capture_output=True, text=True)
         seconds = round((dt.datetime.now() - start).total_seconds(), 2)
         log.write_text(proc.stdout + proc.stderr)
-        results.append({"command": cmd, "rc": proc.returncode, "seconds": seconds, "log": log.name})
-        worst = max(worst, proc.returncode)
+        rc = proc.returncode
+        outcome = "ok" if rc == 0 else (f"killed by signal {-rc}" if rc < 0 else f"exit {rc}")
+        results.append({"command": cmd, "rc": rc, "outcome": outcome, "seconds": seconds, "log": log.name})
+        failed = failed or rc != 0
         with status.open("a") as out:
-            out.write(f"{_now()} - {args.label}: `{cmd}` exit {proc.returncode}, {seconds}s; {log.name}\n")
-        print(f"[{args.label}] rc={proc.returncode} {seconds}s :: {cmd}")
-    (run_dir / f"{args.label}.json").write_text(json.dumps(results, indent=2))
-    return 1 if worst else 0
+            out.write(f"{_now()} - {label}: `{cmd}` {outcome}, {seconds}s; {log.name}\n")
+        print(f"[{label}] {outcome} {seconds}s :: {cmd}")
+    (run_dir / f"{label}.json").write_text(json.dumps(results, indent=2))
+    return 1 if failed else 0
+
+
+def unique_label(run_dir: Path, label: str) -> str:
+    if not (run_dir / f"{label}.json").exists():
+        return label
+    n = 2
+    while (run_dir / f"{label}-r{n}.json").exists():
+        n += 1
+    return f"{label}-r{n}"
 
 
 def issues(text: str, regex: str) -> list[str]:
