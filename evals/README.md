@@ -12,7 +12,7 @@ skipped part of the protocol, whatever the code looks like.
 
 ```sh
 python3 evals/score.py ~/.claude/orchestrate/runs/<date>-<slug>
-python3 evals/score.py ~/.agents/orchestrate/runs/<date>-<slug> --json
+python3 evals/score.py ~/.local/share/orchestrate/runs/<date>-<slug> --json
 ```
 
 ## 2. Tier fitness (manual cells)

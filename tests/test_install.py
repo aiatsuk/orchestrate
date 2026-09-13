@@ -19,9 +19,10 @@ class InstallTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as home:
             proc = run(home=home)
             self.assertEqual(proc.returncode, 0, proc.stderr)
-            for rel in (".claude/skills/orchestrate", ".agents/skills/orchestrate",
-                        ".claude/agents/orchestrate-reviewer.md", ".codex/agents/orchestrate-reviewer.toml"):
+            for rel in (".claude/skills/orchestrate", ".agents/skills/orchestrate", ".claude/agents/orchestrate-reviewer.md"):
                 self.assertTrue((Path(home) / rel).is_symlink(), rel)
+            codex_role = Path(home) / ".codex/agents/orchestrate-reviewer.toml"
+            self.assertTrue(codex_role.is_file() and not codex_role.is_symlink(), "codex roles must be real files")
             self.assertEqual(run(home=home).returncode, 0)  # idempotent
             self.assertEqual(run("--uninstall", home=home).returncode, 0)
             self.assertFalse((Path(home) / ".claude/skills/orchestrate").exists())

@@ -2,6 +2,14 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.3.1] - 2026-09-13
+
+### Fixed
+- Codex ignores symlinked custom-agent files; `install.sh` now copies the Codex roles and links only the Claude ones. The Codex spawn parameter for a role is `agent_type`.
+- The delegation gate distinguishes a rejected role name (spawn again without the role, instructions inlined) from an unavailable spawn tool (report and stop). Found when an eval run stopped at Phase 0.
+- Codex run directory moved to `~/.local/share/orchestrate/runs/`; `~/.agents` is sandbox-protected like `~/.codex`.
+- `prepare_worktrees.sh` flattens a prefix containing `/` into the directory name (`feature/run` gives `feature-run-<slug>` on branch `feature/run/<slug>`).
+
 ## [0.3.0] - 2026-09-13
 
 ### Added

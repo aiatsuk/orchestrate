@@ -4,7 +4,7 @@ description: Orchestrate a task through subagents. Split it into subtasks, write
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.3.0
+  version: 0.3.1
 ---
 
 # Orchestrate
@@ -21,11 +21,11 @@ integration patches when a task passes. Everything else is done by subagents.
 | Action | Claude Code | Codex |
 |--------|-------------|-------|
 | Spawn a subagent | `Agent` tool with `model` and `run_in_background: true` | `spawn_agent` with `model` and `reasoning_effort` |
-| Spawn a named role | `subagent_type: orchestrate-<role>` from `~/.claude/agents` | the role or agent parameter when offered; the run log records it as `agent_role`; still pass `model` and `reasoning_effort` |
+| Spawn a named role | `subagent_type: orchestrate-<role>` from `~/.claude/agents` | `agent_type: orchestrate-<role>` from `~/.codex/agents` (real files, not symlinks); still pass `model` and `reasoning_effort` |
 | Wait for it | completion notification | `wait_agent` |
 | Resume with context | `SendMessage` to the agent | `followup_task` or `send_input`, whichever the version exposes |
 | Close | not needed | `close_agent` if exposed |
-| Run directory | `~/.claude/orchestrate/runs/<date>-<slug>/` | `~/.agents/orchestrate/runs/<date>-<slug>/` |
+| Run directory | `~/.claude/orchestrate/runs/<date>-<slug>/` | `~/.local/share/orchestrate/runs/<date>-<slug>/` (`~/.codex` and `~/.agents` are sandbox-protected) |
 | Usage attribution | the completion notification per agent | `evals/codex_usage.py --latest` after the run |
 
 Details, launch lines and known quirks: `references/harness-claude.md`, `references/harness-codex.md`.
@@ -43,9 +43,12 @@ Classify the task before anything else:
   independent review or a scoped gate materially reduces risk; the user asked for delegation.
 
 Delegation means a real spawn. Do not describe, simulate or reason about delegation instead of
-calling the spawn tool. If the spawn tool is unavailable or fails, report that and stop; never
-fall back silently to doing the delegated work in the orchestrator thread. Never claim that an
-agent worked unless its spawn succeeded and it returned.
+calling the spawn tool. If a named role is rejected (for example "agent type is currently not
+available"), spawn the same task without the role, with the model and effort passed explicitly and
+the role's instructions in the message, and record the fallback in `status.md`. If the spawn tool
+itself is unavailable or every spawn fails, report that and stop; never fall back silently to doing
+the delegated work in the orchestrator thread. Never claim that an agent worked unless its spawn
+succeeded and it returned.
 
 ## Contract
 
@@ -121,8 +124,9 @@ Three roles ship with the skill (`claude/agents/*.md`, `codex/agents/*.toml`, in
 | `orchestrate-implementer` | workspace-write | passed at spawn from the task's tier | Phase 2 |
 | `orchestrate-reviewer` | read-only | tier 3, pinned | Phase 3, Phase 5 final review |
 
-Spawn a role by name when the harness offers a role parameter; pass `model` and effort explicitly
-in every case, so the run is reproducible when the role file is absent.
+Spawn a role by name (`subagent_type` on Claude Code, `agent_type` on Codex); pass `model` and
+effort explicitly in every case, so the run is reproducible when the role file is absent, and fall
+back to a role-less spawn with the role's instructions inlined when the harness rejects the name.
 
 ## Spec template
 

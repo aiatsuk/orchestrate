@@ -20,15 +20,19 @@
   `agents.default_subagent_model` and `agents.default_subagent_reasoning_effort`.
 - Wait: `wait_agent`. Resume: `send_input` per the documentation; some versions expose
   `followup_task` and `send_message` instead. Close: `close_agent` when exposed; otherwise say so.
-- Run directory: `~/.agents/orchestrate/runs/<date>-<slug>/`. Do not put it under `~/.codex/`, the
-  sandbox protects that directory and every write needs an escalation.
+- Run directory: `~/.local/share/orchestrate/runs/<date>-<slug>/`. Do not put it under `~/.codex/` or
+  `~/.agents/`: the sandbox protects both and every write there needs an escalation, which `exec`
+  cannot surface.
 - Effort: the model catalogue lists `low`, `medium`, `high`, `xhigh` for the tier models. The table in
   `SKILL.md` sets tiers 1 and 2 to `xhigh`, tier 3 to `low` and the orchestrator to `high`; the
   2026-09-12 measurements in `routing.md` were taken with tiers 1 and 2 at `medium` and the
   orchestrator at `xhigh`.
 - Named roles: `codex/agents/orchestrate-{explorer,implementer,reviewer}.toml` go to `~/.codex/agents/`
-  (user) or `.codex/agents/` (project); `codex/config.example.toml` lists the `[agents]` keys the skill
-  relies on. The reviewer and the explorer are `read-only` at the sandbox level.
+  (user) or `.codex/agents/` (project) as real files; symlinked role files are ignored and the spawn
+  returns "agent type is currently not available". Spawn with `agent_type: "orchestrate-<role>"`;
+  the built-in types `default`, `explorer` and `worker` also exist. `codex/config.example.toml` lists
+  the `[agents]` keys the skill relies on. The reviewer and the explorer are `read-only` at the
+  sandbox level.
 - `service_tier = "fast"` (or `"flex"`) in the config trades price for latency on versions that
   support it; unverified with this skill, remove the line if the CLI rejects it.
 - Rate-limit windows are labelled by their `window_minutes` in the rollout logs; on some accounts the

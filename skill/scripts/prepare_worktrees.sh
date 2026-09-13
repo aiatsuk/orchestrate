@@ -3,7 +3,8 @@
 #
 #   prepare_worktrees.sh --repo <path> --base <ref> --parent <dir> --prefix <name> [--deps "<cmd>"] <slug> [<slug> ...]
 #
-# Each slug becomes worktree <parent>/<prefix>-<slug> on branch <prefix>/<slug> cut from <ref>.
+# Each slug becomes worktree <parent>/<dirprefix>-<slug> on branch <prefix>/<slug> cut from <ref>, where
+# <dirprefix> is <prefix> with every '/' replaced by '-' (a prefix such as feature/run gives feature-run-<slug>).
 # The optional --deps command runs inside every worktree (for example "npm ci" or "just get").
 set -euo pipefail
 
@@ -23,8 +24,9 @@ done
 [ -n "$repo" ] && [ -n "$base" ] && [ -n "$parent" ] && [ -n "$prefix" ] && [ $# -ge 1 ] || { sed -n '2,8p' "$0"; exit 2; }
 
 mkdir -p "$parent"
+dirprefix=${prefix//\//-}
 for slug in "$@"; do
-  wt="$parent/$prefix-$slug"
+  wt="$parent/$dirprefix-$slug"
   git -C "$repo" worktree add -q -b "$prefix/$slug" "$wt" "$base"
   if [ -n "$deps" ]; then (cd "$wt" && sh -c "$deps" > "$wt/.deps.log" 2>&1) || { echo "deps failed in $wt, see .deps.log" >&2; exit 1; }; fi
   echo "$wt"

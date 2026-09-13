@@ -14,13 +14,13 @@ class PrepareWorktreesTests(unittest.TestCase):
             repo = make_repo(Path(tmp) / "repo")
             parent = Path(tmp) / "wts"
             proc = subprocess.run([str(PREPARE), "--repo", str(repo), "--base", "main", "--parent", str(parent),
-                                   "--prefix", "run", "--deps", "touch deps-ok", "one", "two"],
+                                   "--prefix", "feature/run", "--deps", "touch deps-ok", "one", "two"],
                                   capture_output=True, text=True)
             self.assertEqual(proc.returncode, 0, proc.stderr)
             for slug in ("one", "two"):
-                wt = parent / f"run-{slug}"
-                self.assertTrue((wt / "deps-ok").exists())
-                self.assertEqual(git("rev-parse", "--abbrev-ref", "HEAD", cwd=wt).strip(), f"run/{slug}")
+                wt = parent / f"feature-run-{slug}"
+                self.assertTrue((wt / "deps-ok").exists(), str(wt))
+                self.assertEqual(git("rev-parse", "--abbrev-ref", "HEAD", cwd=wt).strip(), f"feature/run/{slug}")
 
     def test_deps_failure_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:

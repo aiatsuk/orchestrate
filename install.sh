@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Install the orchestrate skill and its named roles.
 #
-#   ./install.sh                 user scope: symlink skill/ into ~/.claude/skills and ~/.agents/skills,
-#                                and the role files into ~/.claude/agents and ~/.codex/agents
+#   ./install.sh                 user scope: symlink skill/ into ~/.claude/skills and ~/.agents/skills, symlink the
+#                                Claude roles into ~/.claude/agents, and copy the Codex roles into ~/.codex/agents
+#                                (Codex ignores symlinked role files)
 #   ./install.sh --uninstall     remove the user-scope symlinks created by this script
 #   ./install.sh --repo <path> [--force]
 #                                project scope: copy skill/ and the roles into <path>/.claude, <path>/.agents,
@@ -21,12 +22,16 @@ link() { # link <source> <target>
 }
 unlink_if_ours() { local t=$1; if [ -L "$t" ]; then rm "$t"; echo "removed $t"; else echo "not a symlink, left alone: $t"; fi; }
 
-user_targets() {
+user_targets() { # symlink targets
   echo "$src|$HOME/.claude/skills/orchestrate"
   echo "$src|$HOME/.agents/skills/orchestrate"
   for f in "$src"/claude/agents/*.md; do echo "$f|$HOME/.claude/agents/$(basename "$f")"; done
+}
+codex_role_targets() { # copy targets: Codex does not load symlinked agent files
   for f in "$src"/codex/agents/*.toml; do echo "$f|$HOME/.codex/agents/$(basename "$f")"; done
 }
+copy_role() { local s=$1 t=$2; mkdir -p "$(dirname "$t")"; if [ -L "$t" ]; then rm "$t"; fi; cp "$s" "$t"; echo "copied $t"; }
+remove_role() { local t=$1; if [ -f "$t" ] && grep -q '^name = "orchestrate-' "$t"; then rm "$t"; echo "removed $t"; elif [ -e "$t" ]; then echo "not ours, left alone: $t"; fi; }
 
 append_agents_block() { # append_agents_block <repo>
   local file="$1/AGENTS.md" marker="<!-- orchestrate: begin -->"
@@ -65,9 +70,11 @@ done
 
 case "$mode" in
   user)
-    user_targets | while IFS='|' read -r s t; do link "$s" "$t"; done ;;
+    user_targets | while IFS='|' read -r s t; do link "$s" "$t"; done
+    codex_role_targets | while IFS='|' read -r s t; do copy_role "$s" "$t"; done ;;
   uninstall)
-    user_targets | while IFS='|' read -r s t; do unlink_if_ours "$t"; done ;;
+    user_targets | while IFS='|' read -r s t; do unlink_if_ours "$t"; done
+    codex_role_targets | while IFS='|' read -r s t; do remove_role "$t"; done ;;
   repo)
     [ -d "$repo" ] || { echo "not a directory: $repo" >&2; exit 2; }
     repo=$(cd "$repo" && pwd)
