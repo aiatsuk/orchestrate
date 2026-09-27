@@ -52,7 +52,8 @@
   already scaffolded worktree is recognised. Prompts carry the spec's sha256 as of `workflow-args`,
   so regenerate the args after editing a spec; a resume with the old args replays the old agents.
   A resume also replays the relayed gate, scaffold and export results (the export's tree check still
-  protects the result); after fixing the environment, start a new run instead of resuming.
+  protects the result); after fixing the environment, or recreating or resetting a worktree, start a
+  new run instead of resuming.
 - The gate, scaffold and export steps are relayed by a utility agent through the Bash tool, which
   allows at most ten minutes per command; the relay prompt asks for that timeout or a background
   run. Keep scoped gates under ten minutes (compare with the baseline duration).
