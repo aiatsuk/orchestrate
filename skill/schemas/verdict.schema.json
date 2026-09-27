@@ -1,0 +1,94 @@
+{
+  "type": "object",
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "defects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "behavior",
+              "regression",
+              "test-gap",
+              "scope",
+              "spec-violation",
+              "build",
+              "docs",
+              "other"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "blocker",
+              "major",
+              "minor"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "scenario": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "kind",
+          "severity",
+          "summary",
+          "scenario"
+        ]
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "gate": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "exit_code": {
+            "type": "integer"
+          },
+          "tail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "exit_code",
+          "tail"
+        ]
+      }
+    }
+  },
+  "required": [
+    "verdict",
+    "defects",
+    "notes",
+    "gate"
+  ]
+}

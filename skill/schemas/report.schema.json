@@ -1,0 +1,82 @@
+{
+  "type": "object",
+  "properties": {
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "change"
+        ]
+      }
+    },
+    "gate": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "exit_code": {
+            "type": "integer"
+          },
+          "tail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "exit_code",
+          "tail"
+        ]
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fails_if": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "fails_if"
+        ]
+      }
+    },
+    "not_done": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "files_changed",
+    "gate",
+    "tests",
+    "not_done",
+    "questions"
+  ]
+}

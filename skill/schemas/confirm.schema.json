@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "defects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "confirmed",
+          "evidence"
+        ]
+      }
+    }
+  },
+  "required": [
+    "defects"
+  ]
+}

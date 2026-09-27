@@ -52,16 +52,22 @@ def reserve_attempt(run_dir: Path, label: str) -> Path:
             candidate = run_dir / f"{label}-r{n}"
 
 
-def run(args: argparse.Namespace) -> int:
-    run_dir = Path(args.run_dir).expanduser().resolve()
-    attempt = reserve_attempt(run_dir, args.label)
-    status = Path(args.status) if args.status else run_dir / "status.md"
+def run_commands(run_dir: Path, label: str, commands: list[str], cwd: str | None = None,
+                 status: Path | None = None, echo=print) -> tuple[Path, list[dict], bool]:
+    """Reserve an attempt, run the commands, write logs, result.json and status lines.
+
+    Returns the attempt directory, the result entries and whether any command failed. `echo`
+    receives one progress line per command (the CLI prints it; importers may redirect it).
+    """
+    run_dir = Path(run_dir).expanduser().resolve()
+    attempt = reserve_attempt(run_dir, label)
+    status = Path(status) if status else run_dir / "status.md"
     results = []
     failed = False
-    for index, cmd in enumerate(args.commands, start=1):
+    for index, cmd in enumerate(commands, start=1):
         log = attempt / f"{index}.log"
         start = dt.datetime.now()
-        proc = subprocess.run(["bash", "-o", "pipefail", "-c", cmd], cwd=args.cwd, capture_output=True, text=True)
+        proc = subprocess.run(["bash", "-o", "pipefail", "-c", cmd], cwd=cwd, capture_output=True, text=True)
         seconds = round((dt.datetime.now() - start).total_seconds(), 2)
         log.write_text(proc.stdout + proc.stderr)
         rc = proc.returncode
@@ -71,8 +77,13 @@ def run(args: argparse.Namespace) -> int:
         failed = failed or rc != 0
         with status.open("a") as out:
             out.write(f"{_now()} - {attempt.name}: `{cmd}` {outcome}, {seconds}s; {rel}\n")
-        print(f"[{attempt.name}] {outcome} {seconds}s :: {cmd}")
+        echo(f"[{attempt.name}] {outcome} {seconds}s :: {cmd}")
     (attempt / "result.json").write_text(json.dumps(results, indent=2))
+    return attempt, results, failed
+
+
+def run(args: argparse.Namespace) -> int:
+    _, _, failed = run_commands(args.run_dir, args.label, args.commands, cwd=args.cwd, status=args.status)
     return 1 if failed else 0
 
 

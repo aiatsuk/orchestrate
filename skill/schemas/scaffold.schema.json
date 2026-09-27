@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "exit_code": {
+      "type": "integer"
+    },
+    "output": {
+      "type": "string"
+    },
+    "head": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "exit_code",
+    "output",
+    "head"
+  ]
+}

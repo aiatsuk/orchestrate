@@ -1,0 +1,28 @@
+{
+  "claude": {
+    "tiers": {"1": {"model": "haiku", "effort": null}, "2": {"model": "sonnet", "effort": null}, "3": {"model": "opus", "effort": null}},
+    "reviewer_default_tier": 3,
+    "adversary": {"model": "sonnet", "effort": null},
+    "utility": {"model": "haiku", "effort": "low"}
+  },
+  "codex": {
+    "tiers": {"1": {"model": "gpt-5.6-luna", "effort": "xhigh"}, "2": {"model": "gpt-5.6-sol", "effort": "xhigh"}, "3": {"model": "gpt-6-astra", "effort": "low"}},
+    "reviewer_default_tier": 3,
+    "adversary": {"model": "gpt-5.6-sol", "effort": "xhigh"},
+    "utility": null
+  },
+  "risky_tags": ["async", "concurrency", "security", "migration", "data"],
+  "risk_tags": ["async", "concurrency", "security", "migration", "data", "public-api", "ui", "docs", "tests", "build"],
+  "rework_rounds": 2,
+  "adversary_variations": [
+    "two events in the same turn against a collaborator that completes synchronously or immediately",
+    "duplicate delivery of the same request, message or event",
+    "restart or crash between a side effect and its commit",
+    "reordering of events, responses or callbacks",
+    "a stale cache or stale state read after a write",
+    "retry after a partial failure",
+    "cancellation or dispose while work is in flight",
+    "boundary values, empty inputs and the largest realistic input",
+    "old clients or data persisted by a previous version"
+  ]
+}
