@@ -829,6 +829,27 @@ class ResultTests(TempDirCase):
         self.assertEqual(rc, 0, out)
         self.assertEqual(out["tasks"]["b"], {"ok": True, "status": "PASS", "problems": []})
 
+
+    def test_amended_scaffolding_commit_fails(self):
+        b = self.args["tasks"][1]
+        rc, scaffold = run_task("scaffold", "--worktree", b["worktree"], "--patch", self.result["tasks"][0]["patch"])
+        self.assertEqual(rc, 0, scaffold)
+        self.assertNotEqual(scaffold["head"], b["start_head"])
+        # an amend keeps the subject and the parent but drops the recorded dependency patches
+        git("commit", "--amend", "-q", "--allow-empty", "-m", "scaffolding (temporary)", cwd=b["worktree"])
+        Path(b["worktree"], "b.txt").write_text("beta changed\n")
+        git("add", "-A", cwd=b["worktree"])
+        rc, gate = run_task("gate", "--run-dir", self.root / "run" / "gates", "--label", "task-b-L0r0", "--worktree", b["worktree"],
+                            "--", *b["gate"])
+        self.assertEqual(rc, 0, gate)
+        rc, finish = run_task("finish", "--worktree", b["worktree"], "--patch", b["patch"], "--scope", "b.txt")
+        self.assertEqual(rc, 0, finish)
+        self.result["tasks"][1] = {"id": "b", "status": "PASS", "reason": "", "tier": 2, "level": 0, "rounds": 0, "gate": gate,
+                                   "reviews": [], "patch": finish["patch"], "sha256": finish["sha256"], "tree": finish["tree"],
+                                   "files": finish["files"], "history": []}
+        rc, out = self.verify(self.result)
+        self.assertEqual(rc, 1, out)
+        self.assertTrue(any("does not record the planned dependency patches" in p for p in out["tasks"]["b"]["problems"]), out)
     def test_head_moved_after_the_gate_fails(self):
         head = self.move_head("after the gate")
         rc, out = self.verify(self.result)
