@@ -794,6 +794,19 @@ def _attempt_problems(planned: dict, done: dict, gate: dict, run_dir: str) -> li
     return problems
 
 
+def _scaffold_patch_problems(worktree: str, head: str, patches: list[str]) -> list[str]:
+    """The scaffolding commit must record exactly the planned dependency patches (an amend keeps subject and parent)."""
+    missing = [patch for patch in patches if not os.path.isfile(patch)]
+    if missing:
+        return [f"dependency patch {patch} does not exist" for patch in missing]
+    expected = "patches: " + " ".join(_sha256(patch) for patch in patches)
+    message = (_git(worktree, "show", "-s", "--format=%B", head) or "").splitlines()
+    if expected not in message:
+        return [f"scaffolding commit {head} does not record the planned dependency patches ({expected}); "
+                "it was amended or built from other patches"]
+    return []
+
+
 def _head_problems(planned: dict, state: dict) -> list[str]:
     """The gate saw the task's start commit, or one scaffolding commit on it, and HEAD has not moved since."""
     worktree = planned["worktree"]
@@ -809,6 +822,8 @@ def _head_problems(planned: dict, state: dict) -> list[str]:
             if subject != SCAFFOLD_SUBJECT or parents != [start]:
                 problems.append(f"gate state head {head} is neither the task's start_head {start} nor a scaffolding commit "
                                 "on it: work committed inside the task worktree is missing from the patch")
+            else:
+                problems.extend(_scaffold_patch_problems(worktree, head, planned.get("_dependency_patches", [])))
     elif not planned.get("done"):
         problems.append("the workflow arguments carry no start_head for this task")
     current = _git(worktree, "rev-parse", "--verify", "HEAD")
@@ -867,7 +882,9 @@ def _pass_problems(planned: dict | None, done: dict, run_dir: str = "") -> list[
 
 
 def verify_result(args_obj: dict, result: dict) -> dict:
-    planned = {t["id"]: t for t in args_obj.get("tasks", [])}
+    planned = {t["id"]: dict(t) for t in args_obj.get("tasks", [])}
+    for t in planned.values():
+        t["_dependency_patches"] = [planned[d]["patch"] for d in t.get("scaffold_from", []) if d in planned]
     run_dir = str(args_obj.get("run_dir", ""))
     tasks: dict[str, dict] = {}
     for done in result.get("tasks", []):
