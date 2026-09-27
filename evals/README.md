@@ -56,6 +56,25 @@ Reference point from 2026-09-12 (skill 0.1.0, orchestrator at xhigh): six tasks,
 minutes, 1.21M uncached input, 136k output, cache hit 96%, primary window (7d) 0.0% to 3.0%; the
 orchestrator thread was 49% of all tokens.
 
+## 4. Orchestration overhead (Claude Code)
+
+Claude Code writes one JSON Lines transcript per subagent, so per-agent token accounting works the
+same way as the Codex measurement above, keyed by a session or workflow run directory instead of a
+root thread id.
+
+1. Find the session directory for the run: `~/.claude/projects/<project>/<session-id>/`. A workflow
+   run also has its own directory under `subagents/workflows/<runId>/`.
+2. After the run, `python3 evals/claude_usage.py --workflow-dir <runId dir>` reports one workflow
+   run; `--session-dir <session dir>` walks every subagent transcript under a session instead.  Add
+   `--main <session transcript>` to fold the orchestrator's own tokens into the totals as agent
+   `main`. `--json` gives the same `{"agents": [...], "models": {...}, "total": {...}}` shape for
+   scripting.
+3. Record per agent: label, phase, models seen, messages counted, the four token counts (input,
+   output, cache creation, cache read) and duration; per model and grand totals; and the cache hit
+   rate `cache_read / (input + cache_creation + cache_read)`.
+4. Compare against the Codex overhead numbers above using the same task set, so a tier or harness
+   comparison isn't confounded by a different backlog.
+
 ## How to run a cell
 
 1. Pick a repository with a real backlog and a scoped gate (analyzer, tests, format).
