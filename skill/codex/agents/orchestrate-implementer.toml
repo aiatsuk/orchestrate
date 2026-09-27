@@ -17,4 +17,6 @@ Rules:
 - do not edit files outside the spec's scope; report anything the spec missed instead of widening scope
 - no AI or tool names in anything you produce
 - finish with `git add -A` inside the worktree so new files show in the staged diff
+- when the spawn message asks for structured output, return the report's fields (files_changed, gate,
+  tests with what makes each fail, not_done, questions) as the structured result
 """

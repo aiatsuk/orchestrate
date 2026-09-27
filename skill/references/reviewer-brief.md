@@ -18,7 +18,20 @@ Verify the implementer's claims listed by the orchestrator against the code; do 
 report. Run the spec's gate commands yourself inside the worktree; do not trust the pasted output.
 Never run full-gate, code generation or format-all recipes. Do not edit any file. Do not commit.
 
-Reply in exactly this form:
+Lenses. A conformance reviewer checks the diff against the spec as above. On tasks tagged `async`,
+`concurrency`, `security`, `migration` or `data` a second reviewer on another model takes the
+adversary lens: it tries to break the change with the failure scenarios listed in `routing.json`
+(`adversary_variations`), reasons each one through against the code and its tests, and reports a
+defect only with a concrete failing scenario. When the lenses disagree, a tie-break reviewer keeps a
+defect unless it can show from the code that the claim is wrong, handled or unreachable.
+
+When the execution loop spawned you, return the verdict as the structured output
+(`schemas/verdict.schema.json`): `verdict`, `defects` with file, line, kind, severity, summary and
+scenario, `notes`, and `gate`. The `kind` of a defect matters: the loop escalates a task when a
+rework leaves only defects of the same file and kind as before, no fewer of them, and when a rework
+introduces a `regression`.
+
+In a manual run, reply in exactly this form:
 VERDICT: PASS | FAIL
 DEFECTS: (only if FAIL) numbered list; each item = file:line, what is wrong, and a concrete failing
 scenario or the definition-of-done item it violates.

@@ -78,3 +78,9 @@ orchestrator at `high` loses nothing observable against `xhigh`.
    spec-caused rework; measure on a run of two or three tasks.
 4. Explorers at tier 1 with `medium` or `low` effort instead of `xhigh`: on Codex the five explorers
    were 30% of all tokens; check whether spec quality holds at lower effort.
+5. A second reviewer with an adversarial lens on another model for tasks tagged `async`,
+   `concurrency`, `security`, `migration` or `data` (0.6.0 protocol default; evidence in
+   `evals/results/2026-09-27-execution-as-code.md`). Measure on the T2 archetype whether it catches
+   the same-turn coalescing class at round zero, and its cost per risky task.
+6. Fresh agents for every rework round and re-review (the workflow runtime cannot resume an agent):
+   measure the cost against the resumed-reviewer numbers above.
