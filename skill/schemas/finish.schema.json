@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "properties": {
+    "patch": {
+      "type": "string"
+    },
+    "sha256": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tree": {
+      "type": "string"
+    },
+    "verify_clean_exit": {
+      "type": "integer"
+    },
+    "output": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patch",
+    "sha256",
+    "files",
+    "tree",
+    "verify_clean_exit",
+    "output"
+  ]
+}

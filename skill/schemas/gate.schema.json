@@ -1,0 +1,79 @@
+{
+  "type": "object",
+  "properties": {
+    "attempt_dir": {
+      "type": "string"
+    },
+    "exit_code": {
+      "type": "integer"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "rc": {
+            "type": "integer"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "log": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "rc",
+          "outcome",
+          "log"
+        ]
+      }
+    },
+    "tail": {
+      "type": "string"
+    },
+    "tree": {
+      "type": "string"
+    },
+    "head": {
+      "type": "string"
+    },
+    "dirty": {
+      "type": "boolean"
+    },
+    "unstaged": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "untracked": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "outside_scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "attempt_dir",
+    "exit_code",
+    "results",
+    "tail",
+    "tree",
+    "head",
+    "dirty",
+    "unstaged",
+    "untracked",
+    "outside_scope"
+  ]
+}
