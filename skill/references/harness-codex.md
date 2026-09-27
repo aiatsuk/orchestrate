@@ -79,7 +79,8 @@
   prompts carry the spec's sha256 and review prompts also the staged tree, so a changed spec or
   changed content reruns its agents. To rerun some tasks only, pass `plan.py workflow-args … --only
   <id> --previous execute-result.json`; agents whose spec and content did not change replay from the
-  journal, so pass a new `--journal` when you want fresh agents for unchanged inputs. The final result goes to
+  journal, so pass a new `--journal` when you want fresh agents for unchanged inputs, and always
+  after resetting a worktree to an earlier commit (a reset keeps its identity). The final result goes to
   `<run dir>/execute-result.json`; check it with `plan.py verify-result` as on Claude Code.
 - Structured output: the runtime sends Codex a strict variant of each schema (no extra properties,
   every property required) and validates the answer against the original; an invalid answer is

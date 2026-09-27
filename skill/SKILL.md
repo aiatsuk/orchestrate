@@ -181,8 +181,9 @@ tasks go to Phase 5. For ESCALATE and BLOCKED tasks read the history, fix the sp
 or the scaffolding if the fault was yours (say so; it does not count against the implementer), and
 start the loop again for those tasks only with regenerated args, `plan.py workflow-args plan.json
 --only <id> [--only <id> …] --previous execute-result.json` (passed dependencies are carried over,
-not rerun; recreate a dependent's worktree when its dependency is rerun too, and regenerate the args
-after recreating any worktree), or report them blocked. A task that failed at tier 3 may go to the
+not rerun; recreate a dependent's worktree when its dependency is rerun too; after recreating or
+resetting any worktree, regenerate the args and start a new run with a fresh journal), or report
+them blocked. A task that failed at tier 3 may go to the
 orchestrator tier as a subagent once.
 
 Manual fallback, only when neither runtime is available (no Workflow tool, no `node`): run the same
