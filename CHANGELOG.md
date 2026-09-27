@@ -2,6 +2,50 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.6.0] - 2026-09-27
+
+The execution loop (implement, gate, review, rework, escalate, export) runs as code instead of from
+the orchestrator's memory. Evidence: `evals/results/2026-09-27-execution-as-code.md`.
+
+### Added
+- `workflows/orchestrate-execute.js`: phases 2 to 4 as a Claude Code workflow script, launched with
+  the `Workflow` tool; every agent returns JSON checked against `schemas/`, the round limit and the
+  escalation are code, and the export refuses a staged tree that changed after the gate.
+- `scripts/run_workflow.js`: runs the same script on Codex, one `codex exec` per agent with a strict
+  output schema, a journal for resume, and the gate, scaffold and export steps as local commands.
+- `scripts/plan.py`: `plan.json` checks (literal scopes, cycles, unknown dependencies, overlapping
+  scopes that are not serialized), the rendered plan table, the workflow arguments (worktrees,
+  transitive scaffolding order, tier chain, review lenses), `verify-result` against the files, and
+  the final report table.
+- `scripts/task.py`: `gate`, `scaffold` and `finish`, each one mechanical step that prints JSON;
+  `integrate.sh scaffold` applies dependency patches all or nothing and commits them as scaffolding.
+- `routing.json`: the routing table in machine-readable form, plus the adversary and utility models
+  and the adversary failure scenarios. `schemas/`: report, verdict, gate, finish, scaffold, confirm.
+- An adversary review lens on another model for tasks tagged `async`, `concurrency`, `security`,
+  `migration` or `data`, with a tie-break reviewer when the lenses disagree.
+- Early escalation when a rework makes no progress (no fewer defects, all of them seen before; for a
+  red gate the same failing output) or introduces a regression. Reports carry, per test, the change
+  that makes it fail.
+- Triage of gate results: `task.py gate` lists unstaged, untracked and out-of-scope staged paths and
+  records them in `state.json`; changes outside the scope that the gate or build left behind stop the
+  task with an environment reason instead of charging the implementer, and the baseline gate must
+  leave none.
+- Reruns: `plan.py workflow-args --only <id> --previous execute-result.json` carries passed
+  dependencies over; scaffolding is idempotent; implementer prompts carry the spec's sha256, so a
+  resume after a spec edit reruns that task; the Codex runtime never replays gate, scaffold or
+  export steps, bounds every `codex exec` by a total and an idle timeout, refuses to start on a
+  changed spec or on live process groups left by an earlier run, and stops every child group on
+  SIGINT, SIGTERM and SIGHUP. Scaffolding on changed dependency patches is refused, not stacked.
+- `plan.py verify-result` also binds the gate to the exported tree and to the task's own attempt
+  directory; `plan.py check` refuses shared, nested or in-repository worktrees and multi-line gates.
+- `evals/claude_usage.py`: per-agent, per-model and total tokens from Claude Code transcripts.
+- `evals/score.py` scores `plan.json` runs and their execute result.
+
+### Changed
+- `SKILL.md` phases 1 to 5 use `plan.json`, the loop and `verify-result`; the manual loop is a
+  fallback for hosts without a workflow runtime. The roles return structured output when asked.
+- `task.py finish` fails on an empty staged diff.
+
 ## [0.5.0] - 2026-09-13
 
 Second reliability release after the external review of 0.4.1. Each item has a regression test.

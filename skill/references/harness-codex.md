@@ -48,3 +48,41 @@
   cache hit rate, rate-limit window delta).
 - Install: symlink or copy `skill/` to `~/.agents/skills/orchestrate/` (user scope) or
   `.agents/skills/orchestrate/` in a repo. `./install.sh` does the user scope.
+
+## The execution loop on Codex
+
+- Run phases 2 to 4 with the same workflow script Claude Code runs:
+  `node <skill>/scripts/run_workflow.js --script <skill>/workflows/orchestrate-execute.js --args <run dir>/execute-args.json`
+  where the args file is `scripts/plan.py workflow-args plan.json` for a plan with `"harness": "codex"`.
+  Every implementer and reviewer becomes one `codex exec` process with `--output-schema`: implementers
+  in `workspace-write` with the task worktree as root, reviewers in `read-only`, the model and effort
+  from `args`, the role instructions from `codex/agents/*.toml`. The gate, scaffold and export steps
+  do not become agents: the runtime runs those helper commands itself, so they are mechanical here.
+- The runtime needs `node` (18 or newer). It starts its own sandboxed `codex` processes, so launch it
+  from a terminal or from an orchestrator session that may run it unsandboxed; a nested sandbox is
+  expected to fail. `--max-parallel` caps concurrent `codex` processes (default 4). Every `codex exec`
+  runs in its own process group and is stopped after `--agent-timeout` seconds in total (default
+  1800) or `--idle-timeout` seconds without an event (default 1800; it must exceed the longest gate
+  that prints nothing, since an agent running a gate is silent until it ends); a stopped attempt
+  counts as a failed one (one retry, then the task is BLOCKED). Relayed helpers stop after
+  `--relay-timeout` (default 1800).
+- Start checks: every spec's sha256 and every worktree's identity on disk must equal the args
+  (regenerate them after editing a spec or recreating a worktree; implementer prompts carry both, so
+  work done in a removed worktree is never replayed),
+  and process groups recorded in `<run dir>/agents/process-groups.json` by an earlier run must be
+  gone; live leftovers refuse the start unless `--kill-leftovers` is given. One runner at a time per
+  run directory (`agents/runner.lock`; a stale lock is taken over). SIGINT, SIGTERM and SIGHUP stop
+  every child group and write no result file; stopped agents rerun on the next start.
+- Results are journaled to `<run dir>/execute-journal.jsonl`; rerunning the same command replays
+  finished agents from the journal and continues where the run stopped. The gate, scaffold and
+  export steps are never replayed: they run again against the current worktree. Implementer
+  prompts carry the spec's sha256 and review prompts also the staged tree, so a changed spec or
+  changed content reruns its agents. To rerun some tasks only, pass `plan.py workflow-args … --only
+  <id> --previous execute-result.json`; agents whose spec and content did not change replay from the
+  journal, so pass a new `--journal` when you want fresh agents for unchanged inputs. The final result goes to
+  `<run dir>/execute-result.json`; check it with `plan.py verify-result` as on Claude Code.
+- Structured output: the runtime sends Codex a strict variant of each schema (no extra properties,
+  every property required) and validates the answer against the original; an invalid answer is
+  retried once with the validation errors, then the agent counts as failed and the task is BLOCKED.
+- Per-agent event streams go to `<run dir>/agents/`; usage attribution stays `evals/codex_usage.py`.
+

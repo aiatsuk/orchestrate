@@ -1,0 +1,22 @@
+{
+  "schema": "orchestrate-plan/v1",
+  "goal": "Cover two small managers with unit tests, move profile loading out of the settings page into its BLoC, then sync the architecture docs.",
+  "harness": "claude",
+  "repo": "/work/app",
+  "base": "feature/canon",
+  "run_dir": "/work/runs/2026-09-27-canon",
+  "worktree_parent": "/work",
+  "branch_prefix": "feature/canon-run",
+  "tasks": [
+    {"id": "t1", "title": "Unit tests for the two config managers", "spec": "task-t1.md",
+     "scope": ["test/managers/config_manager_test.dart", "test/managers/flags_manager_test.dart"],
+     "tier": 1, "depends_on": [], "gate": ["flutter test test/managers/"], "risk": ["tests"]},
+    {"id": "t2", "title": "Move profile loading into ProfileBloc", "spec": "task-t2.md",
+     "scope": ["lib/features/profile/", "test/features/profile/"],
+     "tier": 3, "depends_on": [], "gate": ["flutter analyze lib/features/profile", "flutter test test/features/profile/"],
+     "risk": ["async"]},
+    {"id": "t3", "title": "Sync the architecture docs with the new profile flow", "spec": "task-t3.md",
+     "scope": ["docs/architecture/profile.md"],
+     "tier": 2, "depends_on": ["t2"], "gate": ["grep -q ProfileBloc docs/architecture/profile.md"], "risk": ["docs"]}
+  ]
+}

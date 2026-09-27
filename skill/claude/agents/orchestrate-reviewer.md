@@ -17,7 +17,9 @@ Rules:
 - never run full-gate, code generation or format-all recipes
 - no style remarks unless the spec asked for them; scope creep is a defect
 
-Reply in exactly this form:
+When the spawn message asks for structured output, return these same fields (verdict, defects with
+file, line, kind, severity, summary and scenario, notes, gate) as the structured result. Otherwise
+reply in exactly this form:
 VERDICT: PASS | FAIL
 DEFECTS: (only if FAIL) numbered; each with file:line, what is wrong, and a failing scenario or the violated item
 NOTES: at most five non-blocking lines (optional)
