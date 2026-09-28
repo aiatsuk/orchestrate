@@ -79,5 +79,24 @@ Attempt 2: t2 was scaffolded on t1's patch and its exported patch holds only its
 risky task got the opus conformance review and the sonnet adversary review, both PASS;
 `plan.py verify-result` re-checked both patches, gate logs, `verify-clean` and trees (exit 0).
 
-The Codex runtime was exercised end to end with a scripted `codex` against real repositories and the
-real helpers (tests/test_run_workflow.py), not yet with a live Codex account.
+## 6. Live run of the same script on Codex (2026-09-28)
+
+The same two-task plan with `"harness": "codex"`, run by `run_workflow.js` with codex-cli 0.157.0
+inside the default sandbox (nested workspace-write and read-only sandboxes worked; implementers got
+the Git common directory through `--add-dir`). Strict output schemas were accepted.
+
+| Task | Implementer | Rounds | Reviews | Outcome |
+|------|-------------|--------|---------|---------|
+| t1 | gpt-5.6-luna xhigh | 1 | gpt-5.6-sol xhigh: FAIL (zero and negative step tests started from zero, so they did not prove an existing value stays unchanged), then PASS | PASS |
+| t2 | gpt-5.6-sol xhigh, scaffolded on t1's patch | 0 | gpt-6-astra low conformance PASS, gpt-5.6-sol xhigh adversary PASS | PASS |
+
+Wall time 6 min 10 s; gate, scaffold and export ran as local commands; `plan.py verify-result`
+exited 0. A rerun of the same command replayed the implementers and t2's reviews from the journal
+and re-reviewed only t1, whose staged tree had changed since its first review (verdicts are keyed to
+content), then verified again.
+
+## 7. Saved workflow
+
+`install.sh` copies the script into `~/.claude/workflows/`. A fresh headless session resolved
+`Workflow` by `name: "orchestrate-execute"`; with empty args the script refused at its args check
+before any agent started. Saved workflows load at session start or on `/reload-skills`.
