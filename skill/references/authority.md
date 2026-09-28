@@ -39,7 +39,7 @@ task as BLOCKED with that reason, for example an exhausted budget or a non-conve
 | Subcommand | When | Result |
 | --- | --- | --- |
 | `prepare --task T` | once, after every dependency passed | `{exit_code, output, worktree, branch, head, spec_sha256?, worktree_id?}`; without `worktree` and `head` the task blocks |
-| `dispatch --task T` | before each implementer or rework agent | `{exit_code, output, dispatch_id}`; the implementer must return it as `dispatch_id` |
+| `dispatch --task T` | before each implementer or rework agent | `{exit_code, output, dispatch}`; the implementer must return it as `dispatch_id`, and no other result may carry that key, or the authority would see two results for one dispatch |
 | `collect --task T` | after the implementer returned or failed | `{exit_code, output, accepted}`; the authority reads the result from the host journal, and when it refuses it, ends that dispatch itself |
 | `gate --task T --label L` | after an accepted result | the `task.py gate` object |
 | `rework --task T --reason R --key K …` | after a red or dirty gate | `{exit_code, output}`; keys are `file|kind` |

@@ -47,7 +47,7 @@ function defaultResult(label, opts, prompt) {
   if (kind === 'confirm') return { defects: [] }
   if (kind === 'scaffold') return { exit_code: 0, output: `head head-${id}`, head: `head-${id}` }
   if (kind === 'prepare') return { exit_code: 0, output: 'prepared', worktree: `/wt/gov-${id}`, branch: `gov/${id}`, head: `head-${id}`, spec_sha256: `spec-${id}` }
-  if (kind === 'dispatch') return { exit_code: 0, output: 'registered', dispatch_id: `dispatch-${label.split(':').slice(1).join('-')}` }
+  if (kind === 'dispatch') return { exit_code: 0, output: 'registered', dispatch: `dispatch-${label.split(':').slice(1).join('-')}` }
   if (kind === 'collect') return { exit_code: 0, output: 'imported', accepted: true }
   if (kind === 'return') return { exit_code: 0, output: 'rework recorded' }
   if (kind === 'review-open') {
