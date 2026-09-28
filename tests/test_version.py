@@ -28,6 +28,12 @@ class VersionTests(unittest.TestCase):
         self.assertEqual(frontmatter_version(), file_version())
         self.assertEqual(changelog_version(), file_version())
 
+    def test_workflow_script_carries_the_version(self):
+        script = (REPO / "skill" / "workflows" / "orchestrate-execute.js").read_text()
+        match = re.search(r"^const SCRIPT_VERSION = '([^']+)'$", script, re.M)
+        self.assertIsNotNone(match)
+        self.assertEqual(match.group(1), file_version())
+
     def test_version_is_semver(self):
         self.assertRegex(file_version(), SEMVER)
 
