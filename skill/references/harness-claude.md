@@ -24,9 +24,13 @@
 
 ## The execution loop as a workflow
 
-- Launch phases 2 to 4 with the `Workflow` tool: `scriptPath` = the real path of this skill's
-  `workflows/orchestrate-execute.js` (resolve the skill symlink), `args` = the JSON object printed by
-  `scripts/plan.py workflow-args plan.json` (pass the object itself, not a JSON string). The
+- Launch phases 2 to 4 with the `Workflow` tool and `args` = the JSON object printed by
+  `scripts/plan.py workflow-args plan.json` (pass the object itself, not a JSON string). Prefer
+  `name: "orchestrate-execute"`, the copy `install.sh` saved in `~/.claude/workflows/`: it works even
+  when the skill directory is outside what the session may read. The script refuses args from another
+  skill version, so a stale copy fails at once (rerun `install.sh`). Without the saved copy, use
+  `scriptPath` = the real path of this skill's `workflows/orchestrate-execute.js`; if that is refused
+  because the directory is not readable, add it with `/add-dir` or a Read allow rule. The
   invocation of `/orchestrate` is the opt-in the Workflow tool requires.
 - `./install.sh` also copies the script to `~/.claude/workflows/`, so it is a saved workflow:
   `Workflow` with `name: "orchestrate-execute"` works, and a user can run `/orchestrate-execute`
@@ -36,8 +40,9 @@
   because the skill directory is outside the working directory, add it with `/add-dir` or a Read
   allow rule. In auto mode the first launch asks once; in `claude -p` add `Workflow` to the allow
   rules or the launch is denied.
-- The result arrives as a task notification carrying the script's return value; save it as
-  `execute-result.json` and run `plan.py verify-result`. Progress per phase and agent is in
+- The result arrives as a task notification carrying the script's return value. Save it as
+  `execute-result.json` from the task's output file named in the launch message, not by copying the
+  notification text, which escapes `&`, `<` and `>`; then run `plan.py verify-result`. Progress per phase and agent is in
   `/workflows`; the run's journal and per-agent transcripts are under the session directory
   (`~/.claude/projects/<project>/<session>/subagents/workflows/<runId>/`).
 - Agents run with the roles `orchestrate-implementer` and `orchestrate-reviewer` when installed

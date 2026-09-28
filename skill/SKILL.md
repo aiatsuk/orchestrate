@@ -21,7 +21,7 @@ drives them (implement, gate, review, rework, escalate, export) runs as code, no
 
 | Action | Claude Code | Codex |
 |--------|-------------|-------|
-| Run phases 2 to 4 | `Workflow` tool with `scriptPath` = `workflows/orchestrate-execute.js` and `args` | `node scripts/run_workflow.js --script workflows/orchestrate-execute.js --args <file>` |
+| Run phases 2 to 4 | `Workflow` tool, `name: "orchestrate-execute"` (installed) or `scriptPath` = `workflows/orchestrate-execute.js`, with `args` | `node scripts/run_workflow.js --script workflows/orchestrate-execute.js --args <file>`, started outside the Codex sandbox |
 | Spawn a subagent | `Agent` tool with `model` and `run_in_background: true` | `spawn_agent` with `model` and `reasoning_effort` |
 | Spawn a named role | `subagent_type: orchestrate-<role>` from `~/.claude/agents` | `agent_type: orchestrate-<role>` from `~/.codex/agents` (real files, not symlinks); still pass `model` and `reasoning_effort` |
 | Wait for it | completion notification | `wait_agent` |

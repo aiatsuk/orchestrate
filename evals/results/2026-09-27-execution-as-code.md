@@ -100,3 +100,23 @@ content), then verified again.
 `install.sh` copies the script into `~/.claude/workflows/`. A fresh headless session resolved
 `Workflow` by `name: "orchestrate-execute"`; with empty args the script refused at its args check
 before any agent started. Saved workflows load at session start or on `/reload-skills`.
+
+## 8. End-to-end skill runs on both harnesses (2026-09-28)
+
+A new session followed `SKILL.md` on its own for one brief (two helpers with tests in a small Python
+package, then exports and README), on a fresh repository per harness.
+
+| Harness | Plan | Loop | Result | Protocol score | Cost or time |
+|---------|------|------|--------|----------------|--------------|
+| Claude Code, headless | 3 tasks, two waves (docs after both helpers) | saved workflow by name, 13 agents | 3 PASS at round 0, integrated gate and final review PASS | 1.0 | $3.01 |
+| Codex, `codex exec`, split | 3 tasks, one wave (exports task gated by syntax only) | runner from outside the sandbox, 3 min | 3 PASS (one rework round), integrated gate 26 tests and final review PASS | 1.0 | three sessions |
+
+Findings, fixed in the skill: a `scriptPath` launch was refused because the skill directory was not
+readable from the session (the saved workflow by name worked; the script now also checks the args
+version against its own); the completion notification escapes `&` (take the result from the task
+output file); `codex exec` waits on an open stdin (close it); a runner started inside a Codex sandbox
+fails, so a headless Codex run splits into an orchestrator session, the runner, and a continuing
+session. The Codex orchestrator's one-wave plan with a syntax-only gate for the exports task was
+valid but weaker than the Claude orchestrator's wave split; the integrated gate still caught the
+public API.
+

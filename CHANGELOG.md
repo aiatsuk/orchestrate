@@ -41,7 +41,12 @@ the orchestrator's memory. Evidence: `evals/results/2026-09-27-execution-as-code
 - `evals/claude_usage.py`: per-agent, per-model and total tokens from Claude Code transcripts.
 - `install.sh` copies the workflow scripts into `~/.claude/workflows/` (and `<repo>/.claude/workflows/`
   with `--repo`), so the loop is also a saved `/orchestrate-execute` command; uninstall removes only
-  its own copies. The script refuses args that are not the `plan.py workflow-args` object.
+  its own copies. The script refuses args that are not the `plan.py workflow-args` object, and args
+  from another skill version, so a stale saved copy fails at once.
+- Harness notes from end-to-end runs: on Claude Code launch the saved workflow by name (works when the
+  skill directory is not readable from the session) and take the result from the task output file;
+  on Codex close stdin for `codex exec`, and start the runner outside the Codex sandbox (a headless
+  run splits into an orchestrator session, the runner, and a continuing session).
 - `evals/score.py` scores `plan.json` runs and their execute result.
 
 ### Changed

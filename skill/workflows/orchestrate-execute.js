@@ -15,9 +15,17 @@ export const meta = {
 // escalating one tier up when the rounds run out or a rework makes no progress.
 // The script cannot touch files; agents run the helpers and return schema-checked JSON.
 
+// Kept equal to the skill version by tests/test_version.py; a saved copy that install.sh did not
+// refresh refuses args produced by another version of plan.py.
+const SCRIPT_VERSION = '0.6.0'
+
 const A = args
 if (!A || typeof A !== 'object' || !Array.isArray(A.tasks) || !A.schemas || !A.scripts) {
   throw new Error('args must be the JSON object printed by plan.py workflow-args (pass the object itself, not a file path or text)')
+}
+if (A.version !== SCRIPT_VERSION) {
+  throw new Error(`this workflow script is version ${SCRIPT_VERSION} but the args come from skill version ${A.version}: ` +
+    'rerun install.sh to refresh the saved copy, or launch the skill\'s own script by scriptPath')
 }
 const ROUNDS = A.limits && A.limits.rework_rounds
 if (!Number.isInteger(ROUNDS) || ROUNDS < 0 || ROUNDS > 5) {

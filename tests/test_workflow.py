@@ -9,6 +9,7 @@ from pathlib import Path
 from helpers import REPO
 
 SCRIPT = REPO / "skill" / "workflows" / "orchestrate-execute.js"
+VERSION = (REPO / "VERSION").read_text().strip()
 HARNESS = REPO / "tests" / "workflow_harness.js"
 NODE = shutil.which("node")
 
@@ -31,7 +32,7 @@ def task(tid, *, deps=(), scaffold=None, risky=False, chain=("sonnet", "opus")):
 def args(*tasks, agent_types=True):
     names = {"implementer": "orchestrate-implementer", "reviewer": "orchestrate-reviewer"}
     return {
-        "schema": "orchestrate-execute-args/v1", "version": "0.0.0", "harness": "claude", "run_dir": "/run", "repo": "/repo",
+        "schema": "orchestrate-execute-args/v1", "version": VERSION, "harness": "claude", "run_dir": "/run", "repo": "/repo",
         "base": "main", "scripts": {"task": "/skill/scripts/task.py", "python": "python3"},
         "reviewer_brief": "/run/reviewer-brief.md", "limits": {"rework_rounds": 2},
         "utility": {"model": "haiku", "effort": "low"},
@@ -363,6 +364,17 @@ class WorkflowTests(unittest.TestCase):
                     path.write_text(json.dumps({"args": value, "responses": {}}))
                     proc = subprocess.run([NODE, str(HARNESS), str(SCRIPT), str(path)], capture_output=True, text=True, timeout=60)
                 self.assertIn("plan.py workflow-args", json.loads(proc.stdout)["error"])
+
+    def test_args_of_another_version_refuse_to_start(self):
+        flow = args(task("a"))
+        flow["version"] = "0.0.1"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scenario.json"
+            path.write_text(json.dumps({"args": flow, "responses": {}}))
+            proc = subprocess.run([NODE, str(HARNESS), str(SCRIPT), str(path)], capture_output=True, text=True, timeout=60)
+        error = json.loads(proc.stdout)["error"]
+        self.assertIn("rerun install.sh", error)
+        self.assertIn("0.0.1", error)
 
     def test_invalid_rework_rounds_refuse_to_start(self):
         for value in (None, -1, 1.5, 9):

@@ -2,6 +2,8 @@
 
 - Invocation: `$orchestrate <task>` in the CLI or IDE. `agents/openai.yaml` sets
   `policy.allow_implicit_invocation: false`, so the skill never triggers on its own.
+- Always close stdin for `codex exec` (`< /dev/null`) in scripts and background jobs: with an open
+  stdin it waits for more input ("Reading additional input from stdin...") and never starts.
 - Non-interactive launch for an autonomous run (the orchestrator must be able to spawn subagents,
   so use a model and effort from the orchestrator tier):
 
@@ -11,7 +13,7 @@
     -s workspace-write -c sandbox_workspace_write.network_access=true \
     -c agents.max_concurrent_threads_per_session=8 \
     -m gpt-6-astra -c model_reasoning_effort=high \
-    -o <run dir>/final-message.md '$orchestrate Run the brief at <absolute path>. Read the skill first.'
+    -o <run dir>/final-message.md '$orchestrate Run the brief at <absolute path>. Read the skill first.' < /dev/null
   ```
 
   `exec` has no approval flag; an action that needs a fresh approval fails, so give the sandbox the
@@ -58,9 +60,13 @@
   in `workspace-write` with the task worktree as root, reviewers in `read-only`, the model and effort
   from `args`, the role instructions from `codex/agents/*.toml`. The gate, scaffold and export steps
   do not become agents: the runtime runs those helper commands itself, so they are mechanical here.
-- The runtime needs `node` (18 or newer). It starts its own sandboxed `codex` processes, so launch it
-  from a terminal or from an orchestrator session that may run it unsandboxed; a nested sandbox is
-  expected to fail. `--max-parallel` caps concurrent `codex` processes (default 4). Every `codex exec`
+- The runtime needs `node` (18 or newer). It starts its own sandboxed `codex` processes, and a
+  `codex exec` started inside a Codex sandbox fails ("failed to initialize in-process app-server
+  client: Operation not permitted"). In interactive Codex, approve running the runner command
+  outside the sandbox when asked. In `codex exec`, which cannot surface that approval, split the run:
+  the orchestrator stops after writing the args file and printing the runner command, the operator
+  runs it from a terminal, and a new session continues from `verify-result` using the run directory.
+  The runner itself works inside other sandboxes, for example a Claude Code Bash sandbox. `--max-parallel` caps concurrent `codex` processes (default 4). Every `codex exec`
   runs in its own process group and is stopped after `--agent-timeout` seconds in total (default
   1800) or `--idle-timeout` seconds without an event (default 1800; it must exceed the longest gate
   that prints nothing, since an agent running a gate is silent until it ends); a stopped attempt
