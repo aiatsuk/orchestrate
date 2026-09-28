@@ -5,7 +5,9 @@
 // The scenario holds `args` (the workflow's args global) and `responses`: a map from an agent
 // label to a list of results returned in order (null means the agent failed). Labels without a
 // scripted response get a default by their prefix: impl/rework -> a report, gate -> a pass,
-// review -> PASS, confirm -> everything confirmed, scaffold/finish -> success. Prints one JSON
+// review -> PASS, confirm -> everything confirmed, scaffold/finish -> success; authority steps:
+// prepare/dispatch/return -> success, collect -> accepted, review-open -> a token per --lens,
+// review-close -> FAIL when a review of the same target and round failed, else PASS. Prints one JSON
 // object: {result, calls, logs, phases}. Date.now, Math.random and new Date() throw, as in the
 // real runtime, so a script that depends on them fails here too.
 'use strict'
@@ -30,7 +32,9 @@ const queues = {}
 for (const [label, values] of Object.entries(scenario.responses || {})) queues[label] = [...values]
 const trees = {}
 
-function defaultResult(label, opts) {
+const results = []
+
+function defaultResult(label, opts, prompt) {
   const [kind, id] = label.split(':')
   const tree = trees[id] || (trees[id] = `tree-${id}`)
   if (kind === 'impl' || kind === 'rework') {
@@ -42,6 +46,19 @@ function defaultResult(label, opts) {
   if (kind === 'review') return { verdict: 'PASS', defects: [], notes: [], gate: [] }
   if (kind === 'confirm') return { defects: [] }
   if (kind === 'scaffold') return { exit_code: 0, output: `head head-${id}`, head: `head-${id}` }
+  if (kind === 'prepare') return { exit_code: 0, output: 'prepared', worktree: `/wt/gov-${id}`, branch: `gov/${id}`, head: `head-${id}`, spec_sha256: `spec-${id}` }
+  if (kind === 'dispatch') return { exit_code: 0, output: 'registered', dispatch_id: `dispatch-${label.split(':').slice(1).join('-')}` }
+  if (kind === 'collect') return { exit_code: 0, output: 'imported', accepted: true }
+  if (kind === 'return') return { exit_code: 0, output: 'rework recorded' }
+  if (kind === 'review-open') {
+    const lenses = [...prompt.matchAll(/--lens '([^']+)'/g)].map(m => m[1])
+    return { exit_code: 0, output: 'issued', tokens: Object.fromEntries(lenses.map(l => [l, `token-${id}-${l}`])) }
+  }
+  if (kind === 'review-close') {
+    const prefix = `review:${label.split(':').slice(1).join(':')}:`
+    const failed = results.some(r => r.label.startsWith(prefix) && r.value && r.value.verdict === 'FAIL')
+    return { exit_code: 0, output: 'imported', verdict: failed ? 'FAIL' : 'PASS' }
+  }
   if (kind === 'finish') {
     return { patch: `/run/patches/task-${id}.patch`, sha256: `sha-${id}`, files: ['a.txt'], tree, verify_clean_exit: 0, output: 'clean' }
   }
@@ -53,12 +70,15 @@ async function agent(prompt, opts = {}) {
   if (calls.some(c => c.label === opts.label)) throw new Error(`duplicate agent label ${opts.label}`)
   calls.push({ label: opts.label, phase: opts.phase, model: opts.model, effort: opts.effort, agentType: opts.agentType, schema: Boolean(opts.schema), prompt })
   await new Promise(resolve => setImmediate(resolve))
+  let value
   if (queues[opts.label] && queues[opts.label].length) {
-    const value = queues[opts.label].shift()
+    value = queues[opts.label].shift()
     if (value === '__throw__') throw new Error(`scripted failure of ${opts.label}`)
-    return value
+  } else {
+    value = defaultResult(opts.label, opts, prompt)
   }
-  return defaultResult(opts.label, opts)
+  results.push({ label: opts.label, value })
+  return value
 }
 
 async function parallel(thunks) {

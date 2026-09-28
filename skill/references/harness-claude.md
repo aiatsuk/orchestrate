@@ -48,6 +48,8 @@
 - Agents run with the roles `orchestrate-implementer` and `orchestrate-reviewer` when installed
   (`plan.py workflow-args` checks `~/.claude/agents`); otherwise the role text is inlined into the
   prompt. The model comes from `args` and overrides the role's pinned model.
+- Under an external authority (`references/authority.md`) the authority builds `args` and launches
+  the same saved workflow; it reads each agent's identity from the run's journal named above.
 - Concurrency: at most min(16, CPUs - 2) agents at a time per workflow
   (`CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS` overrides it); more tasks queue.
 - A workflow agent cannot be resumed, so each rework round and each re-review is a fresh agent that

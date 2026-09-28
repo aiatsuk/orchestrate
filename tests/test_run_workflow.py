@@ -322,6 +322,17 @@ class HappyPathTests(unittest.TestCase):
 
 @unittest.skipUnless(NODE, "node is required to run workflow scripts")
 class ControlFlowTests(FixtureCase):
+    def test_authority_args_are_refused_before_any_agent(self):
+        fx = self.fixture()
+        data = json.loads(fx.args_path.read_text())
+        data["authority"] = {"name": "delivery", "helper": ["python3", "/x/steps.py"]}
+        path = fx.run_dir / "authority-args.json"
+        path.write_text(json.dumps(data))
+        proc = fx.run(args_path=path)
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("need the Claude Code workflow runtime", proc.stderr)
+        self.assertEqual(fx.calls(), [])
+
     def test_interrupted_run_repeats_only_unfinished_agents(self):
         fx = self.fixture()
         self.run_ok(fx)

@@ -78,6 +78,8 @@ python3 evals/score.py <run-dir>                        # protocol completeness 
    implement, gate through `task.py`, review (plus an adversary lens on another model for risky
    tasks, and a tie-break when lenses disagree), rework with the defects verbatim, escalate one tier
    up after two rounds or when a rework makes no progress, export and `verify-clean`.
+   The same script is the loop of external authorities such as Delivery Harness, which supply
+   their own step helper and keep the records (`skill/references/authority.md`).
 5. **Verify the result**: `plan.py verify-result` re-checks every passed task against the files.
 6. **Integrate**: patches applied on a dedicated branch, the full gate once, the analyzer compared
    against the baseline list, a final review of the whole diff.
