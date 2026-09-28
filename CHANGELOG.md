@@ -39,6 +39,9 @@ the orchestrator's memory. Evidence: `evals/results/2026-09-27-execution-as-code
 - `plan.py verify-result` also binds the gate to the exported tree and to the task's own attempt
   directory; `plan.py check` refuses shared, nested or in-repository worktrees and multi-line gates.
 - `evals/claude_usage.py`: per-agent, per-model and total tokens from Claude Code transcripts.
+- `install.sh` copies the workflow scripts into `~/.claude/workflows/` (and `<repo>/.claude/workflows/`
+  with `--repo`), so the loop is also a saved `/orchestrate-execute` command; uninstall removes only
+  its own copies. The script refuses args that are not the `plan.py workflow-args` object.
 - `evals/score.py` scores `plan.json` runs and their execute result.
 
 ### Changed

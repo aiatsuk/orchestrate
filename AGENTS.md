@@ -4,7 +4,8 @@
 
 1. Prerequisites: `git` 2.30 or newer, `python3` 3.10 or newer. No Python packages are required.
 2. `./install.sh` links `skill/` into `~/.claude/skills/orchestrate` and `~/.agents/skills/orchestrate`
-   so both harnesses load the same file. `./install.sh --uninstall` removes the links.
+   so both harnesses load the same file, and copies `skill/workflows/*.js` into `~/.claude/workflows/`
+   (rerun it after changing a workflow). `./install.sh --uninstall` removes the links and the copies.
 3. `make test` runs every unit test with the standard library test runner. Run it before and after
    any change. `make check` runs the hygiene tests only.
 4. To validate a real run of the skill, score its run directory: `python3 evals/score.py <run-dir>`.

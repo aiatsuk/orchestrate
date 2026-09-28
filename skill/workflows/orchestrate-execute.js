@@ -16,6 +16,9 @@ export const meta = {
 // The script cannot touch files; agents run the helpers and return schema-checked JSON.
 
 const A = args
+if (!A || typeof A !== 'object' || !Array.isArray(A.tasks) || !A.schemas || !A.scripts) {
+  throw new Error('args must be the JSON object printed by plan.py workflow-args (pass the object itself, not a file path or text)')
+}
 const ROUNDS = A.limits && A.limits.rework_rounds
 if (!Number.isInteger(ROUNDS) || ROUNDS < 0 || ROUNDS > 5) {
   throw new Error('args.limits.rework_rounds must be an integer from 0 to 5')
