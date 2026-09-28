@@ -28,6 +28,10 @@
   `workflows/orchestrate-execute.js` (resolve the skill symlink), `args` = the JSON object printed by
   `scripts/plan.py workflow-args plan.json` (pass the object itself, not a JSON string). The
   invocation of `/orchestrate` is the opt-in the Workflow tool requires.
+- `./install.sh` also copies the script to `~/.claude/workflows/`, so it is a saved workflow:
+  `Workflow` with `name: "orchestrate-execute"` works, and a user can run `/orchestrate-execute`
+  directly with a prepared args file (Claude reads the file and passes its object). The copy is
+  refreshed by rerunning `install.sh`; a scriptPath launch always uses the skill's own file.
 - Claude Code starts a workflow only from a script the session may read. If the launch is refused
   because the skill directory is outside the working directory, add it with `/add-dir` or a Read
   allow rule. In auto mode the first launch asks once; in `claude -p` add `Workflow` to the allow

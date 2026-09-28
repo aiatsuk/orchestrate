@@ -15,7 +15,7 @@ It never triggers on its own.
 ```sh
 git clone https://github.com/aiatsuk/orchestrate
 cd orchestrate
-./install.sh          # symlinks skill/ into both harnesses' skill dirs and the Claude roles; copies the Codex roles (symlinks are ignored there)
+./install.sh          # symlinks skill/ into both harnesses' skill dirs and the Claude roles; copies the Codex roles (symlinks are ignored there) and the workflow into ~/.claude/workflows (/orchestrate-execute)
 ./install.sh --repo ~/src/app   # project scope: copies the skill and roles, appends an orchestration block to AGENTS.md
 make test             # unit tests, no dependencies beyond python3 and git
 ```

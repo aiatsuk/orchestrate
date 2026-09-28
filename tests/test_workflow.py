@@ -355,6 +355,15 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("the loop stopped for this task", result["a"]["reason"])
         self.assertEqual(result["b"]["status"], "PASS")
 
+    def test_args_that_are_not_the_workflow_args_object_refuse_to_start(self):
+        for value in (None, "run/execute-args.json", {"tasks": []}):
+            with self.subTest(value=value):
+                with tempfile.TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "scenario.json"
+                    path.write_text(json.dumps({"args": value, "responses": {}}))
+                    proc = subprocess.run([NODE, str(HARNESS), str(SCRIPT), str(path)], capture_output=True, text=True, timeout=60)
+                self.assertIn("plan.py workflow-args", json.loads(proc.stdout)["error"])
+
     def test_invalid_rework_rounds_refuse_to_start(self):
         for value in (None, -1, 1.5, 9):
             with self.subTest(value=value):
