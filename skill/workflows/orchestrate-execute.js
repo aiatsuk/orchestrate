@@ -218,9 +218,10 @@ function lensText(lens, gate) {
 
 // An authority review token binds the verdict to the exact content the authority issued it for.
 const verdictFormat = token => (A.formats && A.formats.verdict
-  ? `${A.formats.verdict}${token ? ` The review_token must be exactly ${token}.` : ''}`
+  ? A.formats.verdict
   : 'Return the verdict as the structured output: verdict, defects (file, line, kind, severity, summary, scenario), ' +
-    'notes (at most five), gate (each command you ran, its exit code and its last 10 lines).')
+    'notes (at most five), gate (each command you ran, its exit code and its last 10 lines).') +
+  (token ? ` The review_token must be exactly ${token}.` : '')
 
 function reviewPrompt(t, lens, report, previousDefects, tree, token) {
   const recheck = previousDefects && previousDefects.length
@@ -384,8 +385,9 @@ async function runGoverned(t, dependencies) {
   const prep = await record('prepare', task, `prepare:${t.id}`)
   if (!prep) return outcome('BLOCKED', 'the preparing agent returned no result')
   if (blockedBy(prep) || prep.exit_code !== 0) return outcome('BLOCKED', `the authority did not prepare the task: ${blockedBy(prep) || prep.output}`)
+  if (!prep.worktree || !prep.head) return outcome('BLOCKED', 'the preparation named no worktree or starting commit')
   // The authority creates the worktree, so its location and starting commit come from the preparation.
-  const w = { ...t, worktree: prep.worktree || t.worktree, branch: prep.branch || t.branch, start_head: prep.head,
+  const w = { ...t, worktree: prep.worktree, branch: prep.branch || t.branch, start_head: prep.head,
     worktree_id: prep.worktree_id || t.worktree_id, spec_sha256: prep.spec_sha256 || t.spec_sha256 }
   const step = t.chain[0]
   const history = []
@@ -456,7 +458,7 @@ async function runGoverned(t, dependencies) {
     }
     history.push({ level: 0, round, gate_exit: gate ? gate.exit_code : null, reviews, defects })
     // The authority's budget decides first (a refusal above blocks); this bound only stops a runaway loop.
-    if (round >= ROUNDS) return outcome('ESCALATE', `the loop's bound of ${ROUNDS} rework rounds was reached; the coordinator decides`, { history })
+    if (round >= ROUNDS) return outcome('BLOCKED', `the loop's bound of ${ROUNDS} rework rounds was reached before the authority's budget; the coordinator decides`, { history })
     previous = defects
   }
 }

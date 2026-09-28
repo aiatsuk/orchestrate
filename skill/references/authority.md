@@ -24,7 +24,12 @@ differences:
   without `model` inherits the host's configured model. `scaffold_from` may be empty.
 - `integration` (optional): `{worktree, base_sha, acceptance, requirements?, gate?, brief?, lenses}`
   reviews an integrated diff after the tasks (`tasks` may be empty).
-- `limits.rework_rounds` bounds a runaway loop only; the authority's budget decides first.
+- `limits.rework_rounds` bounds a runaway loop only; the authority's budget decides first, and
+  reaching the bound blocks the task.
+- `schemas.verdict` must keep `verdict` (PASS or FAIL) and `defects` (objects with `file`, `kind`,
+  `severity`, `summary`, `scenario`); the loop quotes them into rework prompts.
+
+Under an authority a task ends PASS, BLOCKED or SKIPPED, never ESCALATE.
 
 ## Steps
 
@@ -33,7 +38,7 @@ task as BLOCKED with that reason, for example an exhausted budget or a non-conve
 
 | Subcommand | When | Result |
 | --- | --- | --- |
-| `prepare --task T` | once, after every dependency passed | `{exit_code, output, worktree, branch, head, spec_sha256?, worktree_id?}` |
+| `prepare --task T` | once, after every dependency passed | `{exit_code, output, worktree, branch, head, spec_sha256?, worktree_id?}`; without `worktree` and `head` the task blocks |
 | `dispatch --task T` | before each implementer or rework agent | `{exit_code, output, dispatch_id}`; the implementer must return it as `dispatch_id` |
 | `collect --task T` | after the implementer returned or failed | `{exit_code, output, accepted}`; the authority reads the result from the host journal, and when it refuses it, ends that dispatch itself |
 | `gate --task T --label L` | after an accepted result | the `task.py gate` object |

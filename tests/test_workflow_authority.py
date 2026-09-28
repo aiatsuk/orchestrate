@@ -166,8 +166,45 @@ class AuthorityWorkflowTests(unittest.TestCase):
         gates = {f"gate:a:L0r{i}": [red_gate()] for i in range(3)}
         out = self.run_flow(args(task("a"), rounds=1), gates)
         res = self.result(out, "a")
-        self.assertEqual(res["status"], "ESCALATE")
+        self.assertEqual(res["status"], "BLOCKED")
+        self.assertIn("bound of 1 rework rounds", res["reason"])
         self.assertEqual(len(res["history"]), 2)
+
+    def test_the_token_reaches_reviewers_without_format_overrides(self):
+        flow = args(task("a"))
+        del flow["formats"]
+        out = self.run_flow(flow)
+        prompt = self.prompt(out, "review:a:r0:conformance")
+        self.assertIn("review_token must be exactly token-a-conformance", prompt)
+        self.assertIn("dispatch_id must be exactly dispatch-a-r0", self.prompt(out, "impl:a:L0"))
+
+    def test_an_implementer_without_result_is_collected_and_reworked(self):
+        out = self.run_flow(args(task("a")), {"impl:a:L0": [None], "collect:a:r0": [{"exit_code": 1, "output": "journal_result_missing", "accepted": False}]})
+        prompt = self.prompt(out, "rework:a:L0r1")
+        self.assertIn("the previous attempt returned no report", prompt)
+        self.assertIn("journal_result_missing", prompt)
+        self.assertEqual(self.result(out, "a")["status"], "PASS")
+
+    def test_a_quote_in_a_gate_failure_is_quoted_for_the_shell(self):
+        gate = red_gate()
+        gate["results"][0]["command"] = "it's check"
+        out = self.run_flow(args(task("a")), {"gate:a:L0r0": [gate]})
+        self.assertIn("--key '(gate) it'\\''s check|build'", self.prompt(out, "return:a:r0"))
+
+    def test_a_moved_head_under_an_authority_is_a_defect(self):
+        gate = {**red_gate(), "exit_code": 0, "head": "someone-committed"}
+        out = self.run_flow(args(task("a")), {"gate:a:L0r0": [gate]})
+        self.assertIn("reset --soft head-a", self.prompt(out, "rework:a:L0r1"))
+
+    def test_a_preparation_without_a_worktree_blocks(self):
+        out = self.run_flow(args(task("a")), {"prepare:a": [{"exit_code": 0, "output": "ok"}]})
+        self.assertEqual(self.result(out, "a")["status"], "BLOCKED")
+        self.assertEqual(self.labels(out), ["prepare:a"])
+
+    def test_a_missing_reviewer_blocks_without_closing(self):
+        out = self.run_flow(args(task("a")), {"review:a:r0:conformance": [None]})
+        self.assertEqual(self.result(out, "a")["status"], "BLOCKED")
+        self.assertNotIn("review-close:a:r0", self.labels(out))
 
     def test_export_with_another_tree_blocks(self):
         finish = {"patch": "/p", "sha256": "s", "files": [], "tree": "other", "verify_clean_exit": 0, "output": ""}
