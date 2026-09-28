@@ -398,13 +398,13 @@ async function runGoverned(t, dependencies) {
   for (let round = 0; ; round++) {
     const reg = await record('dispatch', task, `dispatch:${t.id}:r${round}`)
     if (!reg) return outcome('BLOCKED', 'the dispatch agent returned no result', { history })
-    if (blockedBy(reg) || reg.exit_code !== 0 || !reg.dispatch_id) {
+    if (blockedBy(reg) || reg.exit_code !== 0 || !reg.dispatch) {
       return outcome('BLOCKED', `the authority refused the dispatch: ${blockedBy(reg) || reg.output}`, { history })
     }
     report = round === 0
-      ? await agent(implementPrompt(w, step, [], reg.dispatch_id), {
+      ? await agent(implementPrompt(w, step, [], reg.dispatch), {
         label: `impl:${t.id}:L0`, phase: 'Implement', ...typeOf('implementer'), ...pick(step), schema: A.schemas.report })
-      : await agent(reworkPrompt(w, step, report, gate, defects, round, reg.dispatch_id), {
+      : await agent(reworkPrompt(w, step, report, gate, defects, round, reg.dispatch), {
         label: `rework:${t.id}:L0r${round}`, phase: 'Implement', ...typeOf('implementer'), ...pick(step), schema: A.schemas.report })
     // The authority reads the implementer's result from the host journal, never from this script.
     const got = await record('collect', task, `collect:${t.id}:r${round}`)
