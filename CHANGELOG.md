@@ -2,6 +2,26 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.7.0] - 2026-09-28
+
+One execution loop for both harnesses of this family: Delivery Harness drops its own dispatch and
+review scripts and runs `orchestrate-execute` under its authority.
+
+### Added
+- `args.authority`: every mechanical step (prepare, dispatch, collect, gate, rework, review-open,
+  review-close, finish) becomes a subcommand of the authority's helper, run by a relay agent; any
+  step can block the task with the authority's reason. The authority decides rework budgets and
+  convergence, so the loop neither escalates nor tie-breaks under it. Contract in
+  `references/authority.md`.
+- `args.integration`: an independent review of the integrated diff under authority tokens.
+- A security review lens; `formats` to supply the authority's report, verdict and brief texts.
+
+### Changed
+- A step or lens without a model inherits the host's configured model instead of passing null.
+- Missing role data no longer breaks prompt building.
+- `scripts/run_workflow.js` refuses authority arguments: it writes no host journal to read
+  identity from.
+
 ## [0.6.0] - 2026-09-27
 
 The execution loop (implement, gate, review, rework, escalate, export) runs as code instead of from

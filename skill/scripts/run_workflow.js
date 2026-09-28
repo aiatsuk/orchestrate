@@ -951,6 +951,12 @@ async function main(argv) {
     return 2
   }
 
+  if (A.authority || A.integration) {
+    // An external authority reads agent identity from the Claude Code host journal, which this runner does not write.
+    process.stderr.write('run_workflow: args.authority and args.integration need the Claude Code workflow runtime, whose host ' +
+      'journal the authority reads; on Codex, dispatch through the authority\'s own native-agent path.\n')
+    return 2
+  }
   const stale = specProblems(A.tasks)
   if (stale.length) {
     process.stderr.write(`run_workflow: a spec changed after the arguments were generated:\n${stale.map(p => `  ${p}`).join('\n')}\n` +

@@ -4,7 +4,7 @@ description: Orchestrate a task through subagents. Split it into subtasks, write
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.6.0
+  version: 0.7.0
 ---
 
 # Orchestrate
@@ -174,6 +174,8 @@ Per task, in dependency order and in parallel where independent, the loop:
    scope) and refuses it when the staged tree changed after the gate.
 
 Every agent returns JSON checked against `schemas/`; a task ends PASS, ESCALATE, BLOCKED or SKIPPED.
+The same script is the execution loop of external authorities such as Delivery Harness
+(`references/authority.md`): they supply `args.authority` and keep the records and the decisions.
 While it runs, do not do the agents' work; update `status.md`. Save the returned result as
 `execute-result.json`, then run `scripts/plan.py verify-result execute-args.json execute-result.json`:
 it re-checks every PASS against the files (patch hash, gate logs, verify-clean, tree). Only verified
