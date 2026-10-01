@@ -27,6 +27,12 @@
 - Examples under `examples/` are anonymized: placeholder repository names, no real identifiers.
 - The three named roles exist for both harnesses with the same instructions; change them together.
 - Commit messages follow `type(scope): summary` in the imperative, one change per commit.
+- A schema, step result or relay format is a contract between two places in the code. When one side
+  changes, add or update a test that checks every field the consumer reads is present in what the
+  producer emits; past defects came from relay schemas that silently dropped fields.
+- Error paths get tests like success paths: every refusal or `blocked` branch, every exception in a
+  collect or aggregate step, and every error payload checked against its declared schema.
+- In git and shell calls, options go before `--`; anything after it is a path.
 
 ## Versioning
 
@@ -46,3 +52,7 @@
 - [ ] If the protocol changed, `SKILL.md`, the affected reference file, and the matching example agree.
 - [ ] If the routing table changed, the evidence file exists.
 - [ ] If anything under `skill/` changed, the version is bumped and the changelog has the entry.
+- [ ] Changed error paths and schemas have their own tests (see Rules).
+- [ ] For a release that changes the workflow or scripts: after `./install.sh`, one real run of the
+      installed skill on a throwaway repository completed, and its run directory scores with
+      `python3 evals/score.py`.
