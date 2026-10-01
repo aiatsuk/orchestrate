@@ -2,6 +2,18 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.7.1] - 2026-10-01
+
+Wording fixes from a prompt audit; no behaviour change in the scripts.
+
+### Changed
+- `SKILL.md`: the delegation rule forbids describing or simulating delegation in place of a spawn,
+  without forbidding reasoning about it.
+- `SKILL.md`: planning step 4 spawns explorers only for task areas that need more than the targeted
+  reads of step 2, instead of one per area in every run.
+- `references/routing.md`: the numbered hypotheses list gets back its missing heading,
+  "Hypotheses to confirm before promoting into the table".
+
 ## [0.7.0] - 2026-09-28
 
 One execution loop for both harnesses of this family: Delivery Harness drops its own dispatch and

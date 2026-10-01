@@ -4,7 +4,7 @@ description: Orchestrate a task through subagents. Split it into subtasks, write
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.7.0
+  version: 0.7.1
 ---
 
 # Orchestrate
@@ -44,8 +44,8 @@ Classify the task before anything else:
   two or more independent parts; the repository must be explored before implementing; an
   independent review or a scoped gate materially reduces risk; the user asked for delegation.
 
-Delegation means a real spawn. Do not describe, simulate or reason about delegation instead of
-calling the spawn tool. If a named role is rejected (for example "agent type is currently not
+Delegation means a real spawn. Do not describe or simulate delegation in place of calling the
+spawn tool. If a named role is rejected (for example "agent type is currently not
 available"), spawn the same task without the role, with the model and effort passed explicitly and
 the role's instructions in the message, and record the fallback in `status.md`. If the spawn tool
 itself is unavailable or every spawn fails, report that and stop; never fall back silently to doing
@@ -76,12 +76,12 @@ succeeded and it returned.
    file-scoped gate recipes in specs; the full gate runs once, on the integrated tree, by you.
 3. Read the repo's documentation rules. If docs are part of the definition of done there, each spec
    names the exact doc lines to update, or the run gets a dependent docs task in a later wave.
-4. Explore through agents, not in your own context: spawn one read-only `orchestrate-explorer`
-   (tier 1) per task area, all in one wave. Each
-   returns files and symbols with absolute paths, the flow the task touches, existing tests and
-   the reference file, scoped gate commands, and the rules that apply, under 60 lines. Specs are
-   written from those reports. The orchestrator thread re-reads its whole context on every
-   response, so evidence that is not needed for a decision must not enter it.
+4. Explore through agents, not in your own context, wherever a task area needs more than the
+   targeted reads of step 2: spawn one read-only `orchestrate-explorer` (tier 1) per such area,
+   all in one wave. Each returns files and symbols with absolute paths, the flow the task touches,
+   existing tests and the reference file, scoped gate commands, and the rules that apply, under 60
+   lines. Specs are written from those reports. The orchestrator thread re-reads its whole
+   context on every response, so evidence that is not needed for a decision must not enter it.
 5. Run every repo fact check (`git ls-files`, `rg`) from the repo root; a relative path that does not
    exist there silently returns nothing. Point specs at canonical sources, not generated copies.
 6. Surface every decision the user must make now. The session may be non-interactive: state an

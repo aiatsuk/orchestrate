@@ -69,6 +69,7 @@ Confirmed: tier 1 at xhigh passes mechanical tests at round zero on both harness
 discriminating-test criterion makes tier 2 pass async tests at round zero on both harnesses; the
 orchestrator at `high` loses nothing observable against `xhigh`.
 
+## Hypotheses to confirm before promoting into the table
 
 1. Tier 3 as the default reviewer for tier 2 and 3 work; tier 2 reviewers only for tier 1 work. Two
    data points now favour it; and for refactors of async coordination the reviewer must exercise
