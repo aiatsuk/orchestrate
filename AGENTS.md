@@ -42,8 +42,21 @@
 - Every change under `skill/` bumps the version in three places: `metadata.version` in
   `skill/SKILL.md`, the `VERSION` file, and a new top entry in `CHANGELOG.md` with the date.
   `tests/test_version.py` fails when they disagree.
-- Release: `make tag` runs the tests, then creates the annotated tag `v<VERSION>`; push with
-  `git push --tags`.
+
+## Releasing
+
+- In the release PR, bump every version file (`VERSION`, `metadata.version` in `skill/SKILL.md`,
+  `SCRIPT_VERSION` in `skill/workflows/orchestrate-execute.js`) and add the `## [X.Y.Z] - YYYY-MM-DD`
+  section at the top of `CHANGELOG.md`. `make release-check` (`scripts/release.py check`) verifies
+  they agree.
+- After the merge, tag the merged main commit: on an up-to-date main, `make tag` runs the tests and
+  the release check, then creates the annotated tag `v<VERSION>`; or tag explicitly with
+  `git tag -a vX.Y.Z -m "orchestrate X.Y.Z" <merged main sha>`. Push only that tag:
+  `git push origin vX.Y.Z`.
+- The tag starts `.github/workflows/release.yml`: it checks the version files against the tag, runs
+  `make test` and publishes the GitHub Release with that version's changelog section as its notes
+  (`scripts/release.py notes`). It edits the release when one already exists.
+- `gh workflow run release.yml -f tag=vX.Y.Z` republishes the release for an existing tag.
 
 ## Definition of done for a change
 

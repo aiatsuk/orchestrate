@@ -2,6 +2,17 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.8.0] - 2026-10-04
+
+A protocol addition for external authorities: a task that already reported can resume at the gate.
+
+### Added
+- `resume_at: "gate"` in the authority's prepare result: the loop skips the dispatch, implementer
+  and collect steps of the task's first round and continues with the gate, review, rework and
+  finish steps as usual. Without the field (or with null) nothing changes; any other value,
+  the empty string included, blocks the task.
+  Contract in `references/authority.md`.
+
 ## [0.7.1] - 2026-10-01
 
 Wording fixes from a prompt audit; no behaviour change in the scripts.

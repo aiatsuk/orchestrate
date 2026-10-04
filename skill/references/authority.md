@@ -38,7 +38,7 @@ task as BLOCKED with that reason, for example an exhausted budget or a non-conve
 
 | Subcommand | When | Result |
 | --- | --- | --- |
-| `prepare --task T` | once, after every dependency passed | `{exit_code, output, worktree, branch, head, spec_sha256?, worktree_id?}`; without `worktree` and `head` the task blocks |
+| `prepare --task T` | once, after every dependency passed | `{exit_code, output, worktree, branch, head, spec_sha256?, worktree_id?, resume_at?}`; without `worktree` and `head` the task blocks; `resume_at` is described below |
 | `dispatch --task T` | before each implementer or rework agent | `{exit_code, output, dispatch}`; the implementer must return it as `dispatch_id`, and no other result may carry that key, or the authority would see two results for one dispatch |
 | `collect --task T` | after the implementer returned or failed | `{exit_code, output, accepted}`; the authority reads the result from the host journal, and when it refuses it, ends that dispatch itself |
 | `gate --task T --label L` | after an accepted result | the `task.py gate` object |
@@ -46,6 +46,15 @@ task as BLOCKED with that reason, for example an exhausted budget or a non-conve
 | `review-open (--task T \| --integration) --lens L …` | before review | `{exit_code, output, tokens: {lens: token}}`; each reviewer returns its token as `review_token` |
 | `review-close (--task T \| --integration) --lens L …` | after every reviewer returned | `{exit_code, output, verdict}`; the authority imports the verdicts from the host journal and its verdict wins; a FAIL returns the task to rework on the authority's side |
 | `finish --task T` | after a PASS | the `task.py finish` object for the reviewed patch |
+
+### Resuming at the gate
+
+`resume_at: "gate"` in the prepare result says the authority already holds an accepted result for
+this task, for example when an implementer reported before an earlier loop stopped. The loop then
+skips the dispatch, implementer and collect steps of the first round and starts at the gate; the
+review, rework and finish steps follow exactly as usual, and later rounds dispatch as usual. The
+reviewers of that first round get no implementer claims and verify the staged diff alone. Without
+the field, or with `null`, nothing changes; any other value, the empty string included, blocks the task.
 
 A non-zero `exit_code` from dispatch, rework, review-open or review-close blocks the task with
 `output`. The loop still refuses a moved HEAD, changes outside the scope after a gate, and an

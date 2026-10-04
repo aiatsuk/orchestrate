@@ -211,6 +211,47 @@ class AuthorityWorkflowTests(unittest.TestCase):
         out = self.run_flow(args(task("a")), {"finish:a": [finish]})
         self.assertEqual(self.result(out, "a")["status"], "BLOCKED")
 
+    def resumed_prepare(self, tid="a", **extra):
+        return {"exit_code": 0, "output": "prepared", "worktree": f"/wt/gov-{tid}", "branch": f"gov/{tid}",
+                "head": f"head-{tid}", "spec_sha256": f"spec-{tid}", **extra}
+
+    def test_a_task_resumed_at_the_gate_skips_dispatch_and_implementer(self):
+        out = self.run_flow(args(task("a")), {"prepare:a": [self.resumed_prepare(resume_at="gate")]})
+        labels = self.labels(out)
+        self.assertEqual(labels, [
+            "prepare:a", "gate:a:L0r0", "review-open:a:r0", "review:a:r0:conformance", "review-close:a:r0", "finish:a"])
+        self.assertFalse(any(label.startswith(("dispatch:", "impl:", "rework:", "collect:")) for label in labels))
+        self.assertIn("gate --task 'a' --label 'task-a-r0'", self.prompt(out, "gate:a:L0r0"))
+        self.assertIn("'/wt/gov-a'", self.prompt(out, "review:a:r0:conformance"))
+        res = self.result(out, "a")
+        self.assertEqual((res["status"], res["rounds"]), ("PASS", 0))
+
+    def test_a_resumed_task_with_a_red_gate_is_reworked_through_a_dispatch(self):
+        out = self.run_flow(args(task("a")), {"prepare:a": [self.resumed_prepare(resume_at="gate")],
+                                              "gate:a:L0r0": [red_gate()]})
+        labels = self.labels(out)
+        self.assertEqual(labels[:6], ["prepare:a", "gate:a:L0r0", "return:a:r0", "dispatch:a:r1", "rework:a:L0r1", "collect:a:r1"])
+        self.assertNotIn("impl:a:L0", labels)
+        self.assertIn("dispatch_id must be exactly dispatch-a-r1", self.prompt(out, "rework:a:L0r1"))
+        self.assertEqual(self.result(out, "a")["status"], "PASS")
+
+    def test_a_preparation_without_resume_at_dispatches_as_before(self):
+        for prep in (self.resumed_prepare(), self.resumed_prepare(resume_at=None)):
+            out = self.run_flow(args(task("a")), {"prepare:a": [prep]})
+            self.assertEqual(self.labels(out), [
+                "prepare:a", "dispatch:a:r0", "impl:a:L0", "collect:a:r0", "gate:a:L0r0",
+                "review-open:a:r0", "review:a:r0:conformance", "review-close:a:r0", "finish:a"])
+            self.assertEqual(self.result(out, "a")["status"], "PASS")
+
+    def test_an_unknown_resume_point_blocks(self):
+        for point in ("review", "", "GATE", 0, False):
+            with self.subTest(resume_at=point):
+                out = self.run_flow(args(task("a")), {"prepare:a": [self.resumed_prepare(resume_at=point)]})
+                self.assertEqual(self.labels(out), ["prepare:a"])
+                res = self.result(out, "a")
+                self.assertEqual(res["status"], "BLOCKED")
+                self.assertIn("resume", res["reason"])
+
     def test_integration_review_runs_after_tasks_with_tokens(self):
         target = {"worktree": "/wt/integration", "base_sha": "abc", "acceptance": "all requirements", "requirements": ["R1: oracle"],
                   "gate": ["make test"], "brief": "/runroot/plan.json", "lenses": [{"key": "conformance"}, {"key": "adversary"}]}
