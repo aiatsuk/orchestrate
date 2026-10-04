@@ -6,7 +6,7 @@
 // label to a list of results returned in order (null means the agent failed). Labels without a
 // scripted response get a default by their prefix: impl/rework -> a report, gate -> a pass,
 // review -> PASS, confirm -> everything confirmed, scaffold/finish -> success; authority steps:
-// prepare/dispatch/return -> success, collect -> accepted, review-open -> a token per --lens,
+// prepare/dispatch/return -> success (prepare without resume_at), collect -> accepted, review-open -> a token per --lens,
 // review-close -> FAIL when a review of the same target and round failed, else PASS. Prints one JSON
 // object: {result, calls, logs, phases}. Date.now, Math.random and new Date() throw, as in the
 // real runtime, so a script that depends on them fails here too.

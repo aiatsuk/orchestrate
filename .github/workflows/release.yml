@@ -1,0 +1,39 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to publish a release for, vX.Y.Z
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the version files against the tag
+        run: python3 scripts/release.py check --tag "$TAG"
+      - run: git config --global init.defaultBranch main
+      - run: make test
+      - name: Write the release notes
+        run: python3 scripts/release.py notes --tag "$TAG" > notes.md
+      - name: Publish the release
+        run: |
+          VERSION="$(python3 scripts/release.py version)"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "orchestrate ${VERSION}" --notes-file notes.md
+          else
+            gh release create "$TAG" --verify-tag --title "orchestrate ${VERSION}" --notes-file notes.md
+          fi
