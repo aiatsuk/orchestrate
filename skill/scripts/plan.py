@@ -9,7 +9,8 @@ Usage:
   plan.py report ARGS RESULT
 
 `check` validates plan.json (schema `orchestrate-plan/v1`) and prints {"ok": true, "order": [...],
-"waves": [[...], ...]} (exit 0) or {"ok": false, "errors": [...]} (exit 1). Every error is
+"waves": [[...], ...], "warnings": [...]} (exit 0; each warning also goes to stderr) or
+{"ok": false, "errors": [...]} (exit 1). Every error is
 collected. `order` is a topological order; `waves` are the dependency levels. With
 `--check-files`, `repo` must be a Git work tree, `run_dir` must exist and every spec file must
 exist. Plan format:
@@ -101,6 +102,18 @@ RESULT_SCHEMA = "orchestrate-execute-result/v1"
 HARNESSES = ("claude", "codex")
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")
 MAX_TASKS = 30
+# A tier 1 spec copies an existing file: the template's "Copy patterns from:" line, filled in on
+# the same line (a list marker and bold are allowed; the template placeholder and "none" are not).
+REFERENCE_RE = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])?[ \t]*(?:\*\*)?copy patterns from:(?:\*\*)?[ \t]*(.*)$", re.I | re.M)
+NO_REFERENCE = ("<one existing file", "none", "tbd", "n/a", "-", "todo")
+
+
+def has_reference(text: str) -> bool:
+    for match in REFERENCE_RE.finditer(text):
+        value = match.group(1).strip(" \t*`").lower()
+        if value and not any(value == word or value.startswith("<one existing file") for word in NO_REFERENCE):
+            return True
+    return False
 TIERS = (1, 2, 3)
 STATUSES = ("PASS", "ESCALATE", "BLOCKED", "SKIPPED")
 SCHEMA_NAMES = ("report", "verdict", "gate", "finish", "scaffold", "confirm")
@@ -284,10 +297,10 @@ def _ancestors(graph: dict[str, list[str]], node: str) -> set[str]:
 
 
 def check_plan(plan, routing: dict, check_files: bool = False) -> dict:
-    """Validate a plan. Returns {"errors", "tasks", "order", "waves", "ancestors"}; tasks are normalized."""
+    """Validate a plan. Returns {"errors", "warnings", "tasks", "order", "waves", "ancestors"}; tasks are normalized."""
     errors: list[str] = []
     if not isinstance(plan, dict):
-        return {"errors": ["the plan must be a JSON object"], "tasks": [], "order": [], "waves": [], "ancestors": {}}
+        return {"errors": ["the plan must be a JSON object"], "warnings": [], "tasks": [], "order": [], "waves": [], "ancestors": {}}
     if plan.get("schema") != PLAN_SCHEMA:
         errors.append(f"schema must be '{PLAN_SCHEMA}', got {plan.get('schema')!r}")
     harness = plan.get("harness")
@@ -314,6 +327,7 @@ def check_plan(plan, routing: dict, check_files: bool = False) -> dict:
     harness_routing = (routing.get(harness) if harness in HARNESSES else None) or routing.get("claude") or {}
     default_reviewer = harness_routing.get("reviewer_default_tier", 3)
     risk_tags = set(routing.get("risk_tags", []))
+    risky_tags = set(routing.get("risky_tags", []))
     tasks: list[dict] = []
     ids_seen: set[str] = set()
     for position, raw in enumerate(raw_tasks, start=1):
@@ -375,6 +389,10 @@ def check_plan(plan, routing: dict, check_files: bool = False) -> dict:
         unknown_risk = [r for r in risk if r not in risk_tags]
         if unknown_risk:
             errors.append(f"{label}: unknown risk tags {unknown_risk}; allowed: {sorted(risk_tags)}")
+        if tier == 1 and set(risk) & risky_tags:
+            errors.append(f"{label}: tier 1 takes no risky work ({', '.join(sorted(set(risk) & risky_tags))}); use tier 2 or 3")
+        if tier == 1 and _is_int(reviewer_tier) and reviewer_tier < 2:
+            errors.append(f"{label}: tier 1 work is reviewed at least one tier up; reviewer_tier must be 2 or 3")
         worktree = raw.get("worktree")
         if worktree is not None and (not isinstance(worktree, str) or not os.path.isabs(worktree)):
             errors.append(f"{label}: worktree override must be an absolute path, got {worktree!r}")
@@ -428,7 +446,11 @@ def check_plan(plan, routing: dict, check_files: bool = False) -> dict:
     errors.extend(_worktree_errors(plan, tasks))
     if check_files:
         errors.extend(_file_errors(plan, tasks))
-    return {"errors": errors, "tasks": tasks, "order": order, "waves": waves,
+    warnings = []
+    if len(tasks) == 1 and not set(tasks[0]["risk"]) & risky_tags:
+        warnings.append("one task without a risky tag: the delegation gate's root-only or root-plus-review path is "
+                        "usually cheaper and faster; delegate only if plan.md says why")
+    return {"errors": errors, "warnings": warnings, "tasks": tasks, "order": order, "waves": waves,
             "ancestors": {tid: [x for x in order if x in found] for tid, found in ancestors.items()}}
 
 
@@ -487,6 +509,14 @@ def _file_errors(plan: dict, tasks: list[dict]) -> list[str]:
                 spec = spec_path(run_dir, t["spec"])
                 if not os.path.isfile(spec):
                     errors.append(f"task {t['id']}: spec file {spec} does not exist")
+                elif _is_int(t.get("tier")) and t["tier"] == 1:
+                    try:
+                        text = Path(spec).read_text(encoding="utf-8", errors="replace")
+                    except OSError as exc:
+                        errors.append(f"task {t['id']}: cannot read spec file {spec}: {exc.strerror or exc}")
+                        continue
+                    if not has_reference(text):
+                        errors.append(f"task {t['id']}: a tier 1 spec names its reference file in a 'Copy patterns from:' line")
     return errors
 
 
@@ -991,7 +1021,9 @@ def main(argv: list[str] | None = None) -> int:
             routing = load_routing(skill_dir)
             plan, info = checked_plan(args.plan, routing, getattr(args, "check_files", False))
             if args.mode == "check":
-                print(json.dumps({"ok": True, "order": info["order"], "waves": info["waves"]}, indent=2))
+                for warning in info["warnings"]:
+                    print(f"warning: {warning}", file=sys.stderr)
+                print(json.dumps({"ok": True, "order": info["order"], "waves": info["waves"], "warnings": info["warnings"]}, indent=2))
             elif args.mode == "render":
                 sys.stdout.write(render(plan, info, routing))
             else:

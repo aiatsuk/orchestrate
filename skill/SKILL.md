@@ -6,7 +6,7 @@ effort: high
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.8.0
+  version: 0.9.0
 ---
 
 # Orchestrate
@@ -39,12 +39,16 @@ Helper scripts live next to this file in `scripts/`; use them instead of ad-hoc 
 
 Classify the task before anything else:
 
-- **root-only**: one file or one bounded edit, no independent parts, no exploration needed, a
-  reviewer would add nothing. Do it directly, say in one line that the gate chose root-only, skip
+- **root-only**: one file or one bounded edit, no independent parts, no exploration needed, no risky
+  tag, a reviewer would add nothing. Do it directly, say in one line that the gate chose root-only, skip
   the rest of this skill.
-- **delegated** when any of these holds: the task spans several files, modules or services; it has
-  two or more independent parts; the repository must be explored before implementing; an
-  independent review or a scoped gate materially reduces risk; the user asked for delegation.
+- **root plus review**: one change in one module (up to about five files), no independent parts, no
+  risky tag, but an independent check helps. Implement it directly, run its gate, then spawn one
+  read-only reviewer at tier 3 (tier 2 is enough for tier 1 work); no plan and no workflow. Say so in one line.
+- **delegated** when any of these holds: two or more independent parts; the change spans several
+  modules or services; the repository must be explored before implementing; a risky tag applies
+  (async, concurrency, security, migration, data); the user asked for delegation. A one-task plan
+  without a risky tag draws a warning from `plan.py check`: say in plan.md why it is delegated.
 
 Delegation means a real spawn. Do not describe or simulate delegation in place of calling the
 spawn tool. If a named role is rejected (for example "agent type is currently not

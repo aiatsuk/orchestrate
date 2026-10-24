@@ -120,7 +120,7 @@ class CheckCliTests(TempDirCase):
         proc = run_plan("check", self.write(plan))
         self.assertEqual(proc.returncode, 0, proc.stdout)
         out = json.loads(proc.stdout)
-        self.assertEqual(out, {"ok": True, "order": ["a", "e", "b", "c", "d"], "waves": [["a", "e"], ["b", "c"], ["d"]]})
+        self.assertEqual(out, {"ok": True, "order": ["a", "e", "b", "c", "d"], "waves": [["a", "e"], ["b", "c"], ["d"]], "warnings": []})
 
     def test_invalid_plan_exits_one_with_every_error(self):
         plan = make_plan(self.root, task("a", tier=5), task("b", scope=["src/*.txt"]), goal="", harness="other")
@@ -145,6 +145,60 @@ class CheckCliTests(TempDirCase):
         plan = make_plan(self.root, task("a"), task("b", spec=str(self.root / "b.md")))
         proc = run_plan("check", self.write(plan), "--check-files")
         self.assertEqual(proc.returncode, 0, proc.stdout)
+
+    def test_check_files_requires_a_reference_line_in_a_tier_one_spec(self):
+        make_repo(self.root / "repo")
+        (self.root / "run").mkdir()
+        plan = make_plan(self.root, task("a", tier=1, reviewer_tier=2), task("b"))
+        (self.root / "run" / "task-b.md").write_text("spec")
+        for text, ok in (("# Task\n- Copy patterns from: src/x_test.dart\n", True),
+                         ("- Copy patterns from: <worktree>/lib/features/config/config_manager.dart\n", True),
+                         ("- **Copy patterns from:** `src/x_test.dart`\n", True),
+                         ("* copy patterns from: src/x_test.dart\n", True),
+                         ("1. Copy patterns from: src/x_test.dart\n", True),
+                         ("# Task\n- Copy patterns from: <one existing file that does the same kind of thing>\n", False),
+                         ("- Copy patterns from:\n\n## Change\n", False),
+                         ("- Copy patterns from:\n- Other: x\n", False),
+                         ("- Copy patterns from: none\n", False),
+                         ("- Copy patterns from: TBD\n", False),
+                         ("# Task\nno reference\n", False)):
+            with self.subTest(text=text):
+                (self.root / "run" / "task-a.md").write_text(text)
+                proc = run_plan("check", self.write(plan), "--check-files")
+                self.assertEqual(proc.returncode, 0 if ok else 1, proc.stdout)
+                if not ok:
+                    self.assertIn("'Copy patterns from:' line", proc.stdout)
+
+    def test_check_files_reports_an_unreadable_tier_one_spec(self):
+        make_repo(self.root / "repo")
+        (self.root / "run").mkdir()
+        (self.root / "run" / "task-b.md").write_text("spec")
+        spec = self.root / "run" / "task-a.md"
+        spec.write_text("- Copy patterns from: src/x.dart\n")
+        plan = make_plan(self.root, task("a", tier=1, reviewer_tier=2), task("b"))
+        spec.chmod(0)
+        try:
+            proc = run_plan("check", self.write(plan), "--check-files")
+        finally:
+            spec.chmod(0o644)
+        self.assertEqual(proc.returncode, 1, proc.stdout + proc.stderr)
+        self.assertIn("cannot read spec file", json.loads(proc.stdout)["errors"][0])
+
+    def test_a_boolean_tier_gets_only_the_tier_error(self):
+        make_repo(self.root / "repo")
+        (self.root / "run").mkdir()
+        for name in ("a", "b"):
+            (self.root / "run" / f"task-{name}.md").write_text("no reference")
+        proc = run_plan("check", self.write(make_plan(self.root, task("a", tier=True), task("b"))), "--check-files")
+        errors = json.loads(proc.stdout)["errors"]
+        self.assertEqual(1, len(errors), errors)
+        self.assertIn("tier must be 1, 2 or 3", errors[0])
+
+    def test_check_prints_the_small_plan_warning(self):
+        proc = run_plan("check", self.write(make_plan(self.root, task("a"))))
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.assertEqual(1, len(json.loads(proc.stdout)["warnings"]))
+        self.assertIn("warning: one task without a risky tag", proc.stderr)
 
     def test_check_files_rejects_missing_repo_run_dir_and_spec(self):
         plan = make_plan(self.root, task("a"))
@@ -217,6 +271,27 @@ class PlanFieldRuleTests(TempDirCase):
         result = planmod.check_plan(make_plan(self.root, task("a", tier=3)), ROUTING)
         self.assertEqual(result["errors"], [])
         self.assertEqual(result["tasks"][0]["reviewer_tier"], ROUTING["claude"]["reviewer_default_tier"])
+
+    def test_tier_one_takes_no_risky_tag(self):
+        for tag in ROUTING["risky_tags"]:
+            with self.subTest(tag=tag):
+                self.assertRejected(make_plan(self.root, task("a", tier=1, risk=[tag])), "tier 1 takes no risky work")
+        result = planmod.check_plan(make_plan(self.root, task("a", tier=1, risk=["tests"]), task("b")), ROUTING)
+        self.assertEqual(result["errors"], [])
+
+    def test_tier_one_is_reviewed_at_least_one_tier_up(self):
+        self.assertRejected(make_plan(self.root, task("a", tier=1, reviewer_tier=1)), "reviewer_tier must be 2 or 3")
+        result = planmod.check_plan(make_plan(self.root, task("a", tier=1, reviewer_tier=2), task("b")), ROUTING)
+        self.assertEqual(result["errors"], [])
+
+    def test_a_single_task_without_risk_warns_toward_the_root_paths(self):
+        one = planmod.check_plan(make_plan(self.root, task("a")), ROUTING)
+        self.assertEqual(one["errors"], [])
+        self.assertEqual(len(one["warnings"]), 1)
+        self.assertIn("root-only or root-plus-review", one["warnings"][0])
+        risky = planmod.check_plan(make_plan(self.root, task("a", risk=["async"])), ROUTING)
+        self.assertEqual(risky["warnings"], [])
+        self.assertEqual(planmod.check_plan(make_plan(self.root), ROUTING)["warnings"], [])
 
     def test_dependencies_must_be_known_and_not_self(self):
         self.assertRejected(make_plan(self.root, task("a", depends_on=["zz"])), "depends on unknown task 'zz'")
