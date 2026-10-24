@@ -2,6 +2,25 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.9.0] - 2026-10-24
+
+Fewer delegated runs for small work, and checks that make tier 1 safe to use.
+
+### Added
+- Delegation gate: a **root plus review** path for one change in one module with no independent
+  parts and no risky tag: implement directly, run the gate, then one read-only reviewer one tier
+  above the work, with no plan and no workflow. The delegated path now names its triggers
+  concretely (independent parts, several modules, exploration first, a risky tag, a user request).
+- `plan.py check` warns, on stderr and in its JSON `warnings`, about a one-task plan without a
+  risky tag; the plan then has to say why it is delegated.
+- `plan.py check` refuses a tier 1 task with a risky tag (async, concurrency, security, migration,
+  data) and a tier 1 task with `reviewer_tier` 1; with `--check-files` it also refuses a tier 1
+  spec without a filled-in `Copy patterns from:` line (the template placeholder does not count).
+
+### Changed
+- The skill's frontmatter names `model: opus` and `effort: high` for the orchestrator turn, and the
+  orchestrator row of the tier tables names opus, the top tier.
+
 ## [0.8.0] - 2026-10-04
 
 A protocol addition for external authorities: a task that already reported can resume at the gate.

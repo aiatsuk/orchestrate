@@ -67,7 +67,7 @@ python3 evals/score.py <run-dir>                        # protocol completeness 
 
 ## How it works
 
-1. **Gate and intake**: decide root-only versus delegated; read the repo's agent instructions and gate
+1. **Gate and intake**: decide root-only, root plus review (one reviewer, no plan) or delegated; read the repo's agent instructions and gate
    commands; explorers map each task area; one worktree per task with dependencies fetched; a baseline gate run.
 2. **Plan**: `plan.json` with tasks, literal scopes, tiers, dependencies, gates, risk tags and
    reviewer tiers, checked by `plan.py check` and rendered as a table.
