@@ -492,6 +492,15 @@ class WorkflowArgsTests(TempDirCase):
         self.assertEqual(tasks["a"]["chain"][0], {"tier": 2, **step("codex", 2)})
         self.assertIsNone(out["utility"])
 
+    def test_claude_tiers_carry_their_efforts_into_chains_and_lenses(self):
+        self.assertEqual([ROUTING["claude"]["tiers"][t]["effort"] for t in "123"], ["medium", "xhigh", "high"])
+        plan = make_plan(self.root, task("a", tier=1, reviewer_tier=2), task("b", tier=3, risk=["data"]))
+        tasks = self.by_id(self.args_for(plan))
+        self.assertEqual(tasks["a"]["chain"][0], {"tier": 1, "model": "haiku", "effort": "medium"})
+        self.assertEqual(tasks["a"]["lenses"], [lens("conformance", "claude", 2)])
+        self.assertEqual(tasks["b"]["chain"], [{"tier": 3, "model": "opus", "effort": "high"}])
+        self.assertEqual(tasks["b"]["lenses"], [lens("conformance", "claude", 3), adversary("claude")])
+
     def test_missing_roles_give_null_agent_types_and_inline_role_text(self):
         out = self.args_for(make_plan(self.root))
         self.assertEqual(out["agent_types"], {"implementer": None, "reviewer": None})

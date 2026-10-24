@@ -47,7 +47,8 @@
   (`~/.claude/projects/<project>/<session>/subagents/workflows/<runId>/`).
 - Agents run with the roles `orchestrate-implementer` and `orchestrate-reviewer` when installed
   (`plan.py workflow-args` checks `~/.claude/agents`); otherwise the role text is inlined into the
-  prompt. The model comes from `args` and overrides the role's pinned model.
+  prompt. The model and effort come from `args` (the tier's row of `routing.json`) and override the role's
+  pinned model; a tier without an effort runs at the session's level.
 - Under an external authority (`references/authority.md`) the authority builds `args` and launches
   the same saved workflow; it reads each agent's identity from the run's journal named above.
 - Concurrency: at most min(16, CPUs - 2) agents at a time per workflow

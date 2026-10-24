@@ -18,6 +18,9 @@ Fewer delegated runs for small work, and checks that make tier 1 safe to use.
   spec without a filled-in `Copy patterns from:` line (the template placeholder does not count).
 
 ### Changed
+- Routing: the Claude Code tiers name an effort instead of inheriting the session's: tier 1 haiku
+  `medium`, tier 2 sonnet `xhigh`, tier 3 opus `high`. Evidence:
+  `evals/results/2026-10-24-effort-per-tier.md`.
 - The skill's frontmatter names `model: opus` and `effort: high` for the orchestrator turn, and the
   orchestrator row of the tier tables names opus, the top tier.
 

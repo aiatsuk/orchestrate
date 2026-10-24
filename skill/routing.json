@@ -1,6 +1,6 @@
 {
   "claude": {
-    "tiers": {"1": {"model": "haiku", "effort": null}, "2": {"model": "sonnet", "effort": null}, "3": {"model": "opus", "effort": null}},
+    "tiers": {"1": {"model": "haiku", "effort": "medium"}, "2": {"model": "sonnet", "effort": "xhigh"}, "3": {"model": "opus", "effort": "high"}},
     "reviewer_default_tier": 3,
     "adversary": {"model": "sonnet", "effort": null},
     "utility": {"model": "haiku", "effort": "low"}
