@@ -85,6 +85,16 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(out["meta"]["name"], "orchestrate-execute")
         self.assertEqual(out["result"]["schema"], "orchestrate-execute-result/v1")
 
+    def test_tier_efforts_reach_the_implementer_and_every_reviewer(self):
+        flow = args(task("a", risky=True))
+        flow["tasks"][0]["chain"][0]["effort"] = "xhigh"
+        for lens, effort in zip(flow["tasks"][0]["lenses"], ("high", "medium")):
+            lens["effort"] = effort
+        calls = {c["label"]: c for c in self.run_flow(flow)["calls"]}
+        self.assertEqual(calls["impl:a:L0"]["effort"], "xhigh")
+        self.assertEqual(calls["review:a:conformance:L0r0"]["effort"], "high")
+        self.assertEqual(calls["review:a:adversary:L0r0"]["effort"], "medium")
+
     def test_happy_path_runs_implement_gate_review_finish_with_roles_and_models(self):
         out = self.run_flow(args(task("a")))
         self.assertEqual(self.labels(out), ["impl:a:L0", "gate:a:L0r0", "review:a:conformance:L0r0", "finish:a"])

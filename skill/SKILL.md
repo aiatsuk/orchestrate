@@ -120,10 +120,10 @@ same files run in sequence, never in parallel; 3 to 8 tasks per wave. Tag a task
 
 | Tier | Claude Code | Codex | Use for | Never for |
 |------|-------------|-------|---------|-----------|
-| 1 mechanical | `haiku` | `gpt-5.6-luna`, xhigh | Fully specified edits with an exact reference file and a runnable check: simple unit tests, renames, localization keys, boilerplate, surveys. | Design judgment, multi-file wiring, cases derived from stream or timer semantics. |
-| 2 standard | `sonnet` | `gpt-5.6-sol`, xhigh | Implementation from a clear spec: routes, screens, tests including async ones (with the discriminating-test criterion), behaviour-preserving refactors across a few files, docs. Reviews of tier 1 and 2 work. | Structural refactors across many files; features spanning modules. |
-| 3 structural | `opus` | `gpt-6-astra`, low | Structural refactors, feature modules, hard bugs, anything tier 2 failed twice. Reviews of tier 3 work and of the integrated whole. | Nothing in principle; do not avoid it when the task is hard. |
-| orchestrator | `opus`, the top tier | `gpt-6-astra`, high | Planning, specs, verification decisions; a subtask only when tier 3 failed twice. | Routine implementation. |
+| 1 mechanical | `haiku`, medium | `gpt-5.6-luna`, xhigh | Fully specified edits with an exact reference file and a runnable check: simple unit tests, renames, localization keys, boilerplate, surveys. | Design judgment, multi-file wiring, cases derived from stream or timer semantics. |
+| 2 standard | `sonnet`, xhigh | `gpt-5.6-sol`, xhigh | Implementation from a clear spec: routes, screens, tests including async ones (with the discriminating-test criterion), behaviour-preserving refactors across a few files, docs. Reviews of tier 1 and 2 work. | Structural refactors across many files; features spanning modules. |
+| 3 structural | `opus`, high | `gpt-6-astra`, low | Structural refactors, feature modules, hard bugs, anything tier 2 failed twice. Reviews of tier 3 work and of the integrated whole. | Nothing in principle; do not avoid it when the task is hard. |
+| orchestrator | `opus` (the top tier), high | `gpt-6-astra`, high | Planning, specs, verification decisions; a subtask only when tier 3 failed twice. | Routine implementation. |
 
 Reviewer tier: at least the implementer's tier. `routing.json` is the machine-readable copy of this
 table (plus the adversary and utility models) that `plan.py` reads; change both together. Measured

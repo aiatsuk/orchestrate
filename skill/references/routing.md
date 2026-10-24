@@ -49,6 +49,11 @@ and opened a task for it.
 
 ## Configuration decisions after the runs
 
+- 0.9.0: the Claude Code tiers name an effort: tier 1 haiku `medium`, tier 2 sonnet `xhigh`, tier 3
+  opus `high` (reviews at a tier follow it). Measured by a per-task replay on the 2026-09-13 specs:
+  `evals/results/2026-10-24-effort-per-tier.md` (T2 at high passed twice at about a third
+  less cost than xhigh; T4 at high failed once in two; T1 passed at every level).
+
 - 0.2.0: Codex tiers 1 and 2 moved from `medium` to `xhigh` reasoning effort by decision, not by
   measurement. The medium numbers above stay as the baseline; the next Codex run should record
   whether tier 1 still needs a rework round at xhigh and what it costs.
