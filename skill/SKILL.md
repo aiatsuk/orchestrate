@@ -1,6 +1,8 @@
 ---
 name: orchestrate
 description: Orchestrate a task through subagents. Split it into subtasks, write a self-contained spec and a checked plan.json, route each subtask to a model tier, run the implement-gate-review-rework loop as code (a workflow script) in isolated git worktrees, verify every result with a mechanical gate plus independent review, escalate what does not converge, integrate what passed on a separate branch, and report per wave. Works in Claude Code (/orchestrate) and Codex ($orchestrate). Explicit invocation only.
+model: opus
+effort: high
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
@@ -117,7 +119,7 @@ same files run in sequence, never in parallel; 3 to 8 tasks per wave. Tag a task
 | 1 mechanical | `haiku` | `gpt-5.6-luna`, xhigh | Fully specified edits with an exact reference file and a runnable check: simple unit tests, renames, localization keys, boilerplate, surveys. | Design judgment, multi-file wiring, cases derived from stream or timer semantics. |
 | 2 standard | `sonnet` | `gpt-5.6-sol`, xhigh | Implementation from a clear spec: routes, screens, tests including async ones (with the discriminating-test criterion), behaviour-preserving refactors across a few files, docs. Reviews of tier 1 and 2 work. | Structural refactors across many files; features spanning modules. |
 | 3 structural | `opus` | `gpt-6-astra`, low | Structural refactors, feature modules, hard bugs, anything tier 2 failed twice. Reviews of tier 3 work and of the integrated whole. | Nothing in principle; do not avoid it when the task is hard. |
-| orchestrator | the top tier available | `gpt-6-astra`, high | Planning, specs, verification decisions; a subtask only when tier 3 failed twice. | Routine implementation. |
+| orchestrator | `opus`, the top tier | `gpt-6-astra`, high | Planning, specs, verification decisions; a subtask only when tier 3 failed twice. | Routine implementation. |
 
 Reviewer tier: at least the implementer's tier. `routing.json` is the machine-readable copy of this
 table (plus the adversary and utility models) that `plan.py` reads; change both together. Measured
