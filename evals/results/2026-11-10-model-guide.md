@@ -81,7 +81,7 @@ a cache-read rate of 0.20 and was too low.
 
 - Reviews on sonnet (the guide lists repeated review work under sonnet at `medium`): two local runs
   favour the tier 3 reviewer, the only one that found cross-task defects. The corrected price makes
-  one measurement worthwhile for tier 1 and 2 work (hypothesis 9).
+  one measurement worthwhile for tier 1 and 2 work (hypothesis 10).
 - Planning on a big model and editing on a small one without a check: the tiers already do this,
   with a gate and an independent review behind every edit.
 - An advisor model beside the implementer: the guide's own table shows no clear win.
