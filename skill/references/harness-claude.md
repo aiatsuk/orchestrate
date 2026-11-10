@@ -2,6 +2,19 @@
 
 - Invocation: `/orchestrate <task>`. The skill is user-invocable only (`disable-model-invocation: true`);
   the task text arrives as `$ARGUMENTS`.
+- Orchestrator model: the session's (`model: inherit`), at `high`. A skill's `model` and `effort`
+  last one turn and the loop reports back in later turns, so a pin would cover the planning turn
+  only. Pick the model before the run, in a fresh session or right after `/compact`: `fable` for a
+  run that leads many agents or a major migration, `opus` otherwise. Do not switch model during a
+  run: the prompt cache belongs to the model that wrote it, so the first turn on another model
+  writes the whole conversation again, and a move down a tier drops the earlier reasoning.
+- Keep the orchestrator's context lean; it is re-read on every response and the top model pays the
+  most for it. Reading goes to explorers and to the built-in search agent; a user agent named
+  `Explore` with `model: haiku` replaces the built-in one, which otherwise runs on the session's
+  model. `CLAUDE_CODE_SUBAGENT_MODEL` sets the model of agents that name none; it does not override
+  a role's `model` or the `model` the loop passes.
+- Top rung: spawn it with the `Agent` tool, `model: fable` and effort `medium`, the implementer
+  role and the task's spec plus the full defect history.
 - Spawn: the `Agent` tool with `model` set to the tier's model name, `run_in_background: true`, and a
   `description` carrying the task number so notifications map back to the plan. The agent's final
   report is not shown to the user; relay it.
@@ -48,7 +61,8 @@
 - Agents run with the roles `orchestrate-implementer` and `orchestrate-reviewer` when installed
   (`plan.py workflow-args` checks `~/.claude/agents`); otherwise the role text is inlined into the
   prompt. The model and effort come from `args` (the tier's row of `routing.json`) and override the role's
-  pinned model; a tier without an effort runs at the session's level.
+  pinned model; a step without an effort runs at the session's level only when it is on the session's
+  model, and at a level the harness does not document otherwise.
 - Under an external authority (`references/authority.md`) the authority builds `args` and launches
   the same saved workflow; it reads each agent's identity from the run's journal named above.
 - Concurrency: at most min(16, CPUs - 2) agents at a time per workflow

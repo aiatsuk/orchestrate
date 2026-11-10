@@ -43,7 +43,8 @@ For a fully autonomous Codex run see the launch line in `skill/references/harnes
 | 1 mechanical | haiku, medium | gpt-5.6-luna, xhigh | fully specified edits with a reference file and a runnable check |
 | 2 standard | sonnet, xhigh | gpt-5.6-sol, xhigh | implementation from a clear spec; reviews of tier 1 and 2 work |
 | 3 structural | opus, high | gpt-6-astra, low | structural refactors, hard bugs; reviews of tier 3 work and of the integrated whole |
-| orchestrator | opus (the top tier), high | gpt-6-astra, high | planning, specs, verification decisions |
+| orchestrator | the session's model (fable for large runs, else opus), high | gpt-6-astra, high | planning, specs, verification decisions |
+| top rung | fable, medium | the orchestrator's row | one subagent, once, for a task that failed at tier 3 |
 
 Measured results behind the table and the open hypotheses: `skill/references/routing.md`.
 

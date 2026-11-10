@@ -49,6 +49,13 @@ and opened a task for it.
 
 ## Configuration decisions after the runs
 
+- 0.10.0: the orchestrator runs on the session's model at `high` (frontmatter `model: inherit`).
+  A skill's pin lasts one turn, so the 0.9.0 pin to opus covered only the planning turn, and on a
+  fable session it moved that turn one tier down and re-wrote the conversation's cache on the way
+  there and back. The rung above tier 3 is named: fable at `medium`, by the published guide's rule
+  (the next model up at a lower effort), by decision and not yet by a local run. The tier rows are
+  unchanged. Evidence and the cells to measure: `evals/results/2026-11-10-model-guide.md`.
+
 - 0.9.0: the Claude Code tiers name an effort: tier 1 haiku `medium`, tier 2 sonnet `xhigh`, tier 3
   opus `high` (reviews at a tier follow it). Measured by a per-task replay on the 2026-09-13 specs:
   `evals/results/2026-10-24-effort-per-tier.md` (T2 at high passed twice at about a third
@@ -90,3 +97,16 @@ orchestrator at `high` loses nothing observable against `xhigh`.
    the same-turn coalescing class at round zero, and its cost per risky task.
 6. Fresh agents for every rework round and re-review (the workflow runtime cannot resume an agent):
    measure the cost against the resumed-reviewer numbers above.
+7. The top rung, fable at `medium`, passes a task that failed twice at tier 3, at a cost per task
+   below a third tier 3 attempt plus its reviews. No local run yet.
+8. Tier 2 past `high`: opus at `medium` passes the async-test archetype at round zero for no more
+   than sonnet at `xhigh` costs (the guide: past `high`, the next model up at a lower effort).
+9. Low first, high on failure: tier 2 at `high` with only the failed tasks reworked at `xhigh`, and
+   tier 3 at `medium` with rework at `high`, cost less per passed task than the fixed levels. The
+   gate is the automatic check; a defect only a reviewer finds also costs a review round, so
+   count reviews in the price.
+10. A tier 2 reviewer for tier 1 and 2 work at `high`: at the corrected price (sonnet's cache reads
+    are half of opus's) it halves the largest cost of a run, if it still finds the defects the
+    tier 3 reviewer found in the 2026-09-13 and 2026-10-24 cells.
+11. A named effort for the adversary (sonnet, effort unset): off the session's model the level it
+    runs at is not documented, so the lens is not reproducible until it names one.

@@ -1,12 +1,12 @@
 ---
 name: orchestrate
 description: Orchestrate a task through subagents. Split it into subtasks, write a self-contained spec and a checked plan.json, route each subtask to a model tier, run the implement-gate-review-rework loop as code (a workflow script) in isolated git worktrees, verify every result with a mechanical gate plus independent review, escalate what does not converge, integrate what passed on a separate branch, and report per wave. Works in Claude Code (/orchestrate) and Codex ($orchestrate). Explicit invocation only.
-model: opus
+model: inherit
 effort: high
 argument-hint: <task, plus repo path and branch when not the current one>
 disable-model-invocation: true
 metadata:
-  version: 0.9.0
+  version: 0.10.0
 ---
 
 # Orchestrate
@@ -123,10 +123,12 @@ same files run in sequence, never in parallel; 3 to 8 tasks per wave. Tag a task
 | 1 mechanical | `haiku`, medium | `gpt-5.6-luna`, xhigh | Fully specified edits with an exact reference file and a runnable check: simple unit tests, renames, localization keys, boilerplate, surveys. | Design judgment, multi-file wiring, cases derived from stream or timer semantics. |
 | 2 standard | `sonnet`, xhigh | `gpt-5.6-sol`, xhigh | Implementation from a clear spec: routes, screens, tests including async ones (with the discriminating-test criterion), behaviour-preserving refactors across a few files, docs. Reviews of tier 1 and 2 work. | Structural refactors across many files; features spanning modules. |
 | 3 structural | `opus`, high | `gpt-6-astra`, low | Structural refactors, feature modules, hard bugs, anything tier 2 failed twice. Reviews of tier 3 work and of the integrated whole. | Nothing in principle; do not avoid it when the task is hard. |
-| orchestrator | `opus` (the top tier), high | `gpt-6-astra`, high | Planning, specs, verification decisions; a subtask only when tier 3 failed twice. | Routine implementation. |
+| orchestrator | the session's model, high: `fable` for a run that leads many agents or a major migration, else `opus` | `gpt-6-astra`, high | Planning, specs, verification decisions. | Routine implementation. |
+| top rung | `fable`, medium | the orchestrator's row | One subagent, once, for a task that failed at tier 3. | Anything tier 3 has not failed. |
 
-Reviewer tier: at least the implementer's tier. `routing.json` is the machine-readable copy of this
-table (plus the adversary and utility models) that `plan.py` reads; change both together. Measured
+Reviewer tier: at least the implementer's tier. `routing.json` is the machine-readable copy of the
+tier rows (plus the adversary and utility models) that `plan.py` reads; change both together. If the
+session's model is below the tier 3 model, stop and ask the user to switch before planning. Measured
 results and open hypotheses: `references/routing.md`.
 
 ## Named roles
@@ -191,8 +193,7 @@ start the loop again for those tasks only with regenerated args, `plan.py workfl
 --only <id> [--only <id> …] --previous execute-result.json` (passed dependencies are carried over,
 not rerun; recreate a dependent's worktree when its dependency is rerun too; after recreating or
 resetting any worktree, regenerate the args and start a new run with a fresh journal), or report
-them blocked. A task that failed at tier 3 may go to the
-orchestrator tier as a subagent once.
+them blocked. A task that failed at tier 3 may go to the top rung as a subagent once.
 
 Manual fallback, only when neither runtime is available (no Workflow tool, no `node`): run the same
 steps by hand with the Agent or spawn tool, one agent per step, the same helpers and the same limits,
