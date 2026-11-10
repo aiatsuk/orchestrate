@@ -106,7 +106,7 @@ orchestrator at `high` loses nothing observable against `xhigh`.
    below a third tier 3 attempt plus its reviews. Measured so far only on a task tier 3 passes
    (two passes at $4.3); still open on a task tier 3 failed.
 8. Rejected on 2026-11-10: opus at `medium` as tier 2. It passed the async-test archetype twice at
-   about the cost of sonnet at `xhigh` and twice the cost of sonnet at `high`.
+   twice the same-day cost of sonnet at `high`.
 9. Rework one level up: a tier 2 rework at `xhigh` and a tier 3 rework at `high` (the loop reworks
    at the tier's own level today). The first-attempt half is in the table since 0.10.0; no cell has
    failed yet, so the rework half has no data. A defect only a reviewer finds also costs a review

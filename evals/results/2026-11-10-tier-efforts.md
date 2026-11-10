@@ -62,7 +62,8 @@ with reviews: $26.93 ($19.70 implementers, $7.23 reviewers).
 
 ## Limits
 
-One repository, one archetype per tier, two or three repetitions, one control cell. No cell failed,
+One repository, one archetype per tier, two or three repetitions, one control cell. The driver puts
+the spec text into the prompt, while the loop passes only the spec's path. No cell failed,
 so the rework path at a higher level was not exercised and its cost above is an estimate. The top
 rung was measured on a task tier 3 passes, not on one tier 3 failed. The reviewer judges against
 the spec and reasons about discriminating tests rather than mutating the code.

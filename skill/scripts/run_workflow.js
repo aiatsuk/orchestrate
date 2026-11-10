@@ -397,8 +397,8 @@ function signalGroup(pgid, signal) {
 
 // A group is alive while one of its members has not exited: members that exited but were not
 // reaped yet (zombies, state Z) do not count. When ps cannot answer, an existing group counts as alive.
-// The whole process table can exceed the 1 MiB default on a busy machine; an overflow would read as
-// "no such group" and hide a live leftover.
+// The whole process table can exceed the 1 MiB default on a busy machine; the read then fails and a
+// live leftover is reported without its members.
 const PS_MAX_BUFFER = 64 * 1024 * 1024
 
 function groupAlive(pgid) {

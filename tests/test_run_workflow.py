@@ -624,6 +624,33 @@ class StartChecksTests(FixtureCase):
         self.assertEqual({tid: t["status"] for tid, t in fx.result().items()}, {"t1": "PASS", "t2": "PASS"})
         self.assertEqual(json.loads(fx.registry().read_text()), [])
 
+    def test_a_process_table_over_one_mebibyte_still_lists_the_leftover_members(self):
+        # A fake `ps` pads the full listing past Node's 1 MiB default buffer, as a machine with a few
+        # thousand processes does; every other `ps` call goes to the real one.
+        real = shutil.which("ps")
+        fx = self.fixture()
+        bin_dir = fx.root / "fakebin"
+        bin_dir.mkdir()
+        fake = bin_dir / "ps"
+        fake.write_text(
+            "#!/bin/sh\n"
+            "if [ \"$*\" = \"-A -o pid=,pgid=,command=\" ]; then\n"
+            "  awk 'BEGIN { for (i = 0; i < 30000; i++) printf \"%d %d padding-%060d\\n\", 9000000 + i, 9000000 + i, i }'\n"
+            "fi\n"
+            f"exec {real} \"$@\"\n")
+        fake.chmod(0o755)
+        env = {"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+        listing = subprocess.run([str(fake), "-A", "-o", "pid=,pgid=,command="], capture_output=True, text=True, env={**os.environ, **env})
+        self.assertGreater(len(listing.stdout), 1024 * 1024)
+        leftover = session_sleep(self)
+        fx.registry().parent.mkdir(parents=True)
+        fx.registry().write_text(json.dumps([
+            {"pgid": leftover.pid, "label": "impl:t1:L0", "runner": 1, "started": started_at(leftover.pid)}]))
+        proc = fx.run(env=env)
+        self.assertEqual(proc.returncode, 2, proc.stderr)
+        self.assertIn(f"process group {leftover.pid} (impl:t1:L0, runner 1): {leftover.pid} sleep 60", proc.stderr)
+        self.assertNotIn("members unknown", proc.stderr)
+
     def test_recorded_group_whose_leader_is_another_process_is_left_alone(self):
         fx = self.fixture()
         other = session_sleep(self)
