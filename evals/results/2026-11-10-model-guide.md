@@ -74,8 +74,8 @@ a cache-read rate of 0.20 and was too low.
 2. The rung above tier 3 is named: fable at `medium`, one subagent, once. It follows the guide's
    rule (the next model up at a lower effort than the failed attempt). By decision, not yet by a
    local measurement; hypothesis 7 in `skill/references/routing.md` covers it.
-3. `routing.json` does not change. Tier 2 stays sonnet at `xhigh` and tier 3 opus at `high` until
-   the cells below are measured.
+3. The tier rows change only by measurement: the cells listed below were run the same day and are
+   in `2026-11-10-tier-efforts.md`, with the decisions they support.
 
 ## Considered and not adopted
 
@@ -86,7 +86,7 @@ a cache-read rate of 0.20 and was too low.
   with a gate and an independent review behind every edit.
 - An advisor model beside the implementer: the guide's own table shows no clear win.
 
-## Cells to measure next
+## Cells measured the same day
 
 Same replay method as `2026-10-24-effort-per-tier.md` (headless implementer, fixed reviewer, two
 repetitions per cell).
@@ -98,4 +98,4 @@ repetitions per cell).
 | T2 structural move, opus `medium` | Does `medium` hold on tier 3 work at about 70% of the cost? | opus `high`: 2 of 2, $3.15 |
 | T2 structural move, fable `medium` | What does the top rung cost and does it pass? | opus `high` |
 
-About eight to ten cells; the 2026-10-24 measurement cost $26 for fifteen.
+Results and decisions: `2026-11-10-tier-efforts.md` (twelve cells, $26.93).

@@ -53,8 +53,13 @@ and opened a task for it.
   A skill's pin lasts one turn, so the 0.9.0 pin to opus covered only the planning turn, and on a
   fable session it moved that turn one tier down and re-wrote the conversation's cache on the way
   there and back. The rung above tier 3 is named: fable at `medium`, by the published guide's rule
-  (the next model up at a lower effort), by decision and not yet by a local run. The tier rows are
-  unchanged. Evidence and the cells to measure: `evals/results/2026-11-10-model-guide.md`.
+  (the next model up at a lower effort). Evidence: `evals/results/2026-11-10-model-guide.md`.
+- 0.10.0: implementers run one level lower and reviewers stay where they were: tier 2 sonnet at
+  `high` (reviews at `xhigh`), tier 3 opus at `medium` (reviews at `high`); a tier's
+  `review_effort` in `routing.json` names the review level. Measured by a per-task replay:
+  `evals/results/2026-11-10-tier-efforts.md` (T2 at `medium` passed twice for about a quarter less
+  than the same-day control at `high`; T4 at `high` passed three times; opus at `medium` on T4 cost
+  twice sonnet at `high`; fable at `medium` passed T2 twice at 1.8 times opus at `medium`).
 
 - 0.9.0: the Claude Code tiers name an effort: tier 1 haiku `medium`, tier 2 sonnet `xhigh`, tier 3
   opus `high` (reviews at a tier follow it). Measured by a per-task replay on the 2026-09-13 specs:
@@ -98,13 +103,14 @@ orchestrator at `high` loses nothing observable against `xhigh`.
 6. Fresh agents for every rework round and re-review (the workflow runtime cannot resume an agent):
    measure the cost against the resumed-reviewer numbers above.
 7. The top rung, fable at `medium`, passes a task that failed twice at tier 3, at a cost per task
-   below a third tier 3 attempt plus its reviews. No local run yet.
-8. Tier 2 past `high`: opus at `medium` passes the async-test archetype at round zero for no more
-   than sonnet at `xhigh` costs (the guide: past `high`, the next model up at a lower effort).
-9. Low first, high on failure: tier 2 at `high` with only the failed tasks reworked at `xhigh`, and
-   tier 3 at `medium` with rework at `high`, cost less per passed task than the fixed levels. The
-   gate is the automatic check; a defect only a reviewer finds also costs a review round, so
-   count reviews in the price.
+   below a third tier 3 attempt plus its reviews. Measured so far only on a task tier 3 passes
+   (two passes at $4.3); still open on a task tier 3 failed.
+8. Rejected on 2026-11-10: opus at `medium` as tier 2. It passed the async-test archetype twice at
+   about the cost of sonnet at `xhigh` and twice the cost of sonnet at `high`.
+9. Rework one level up: a tier 2 rework at `xhigh` and a tier 3 rework at `high` (the loop reworks
+   at the tier's own level today). The first-attempt half is in the table since 0.10.0; no cell has
+   failed yet, so the rework half has no data. A defect only a reviewer finds also costs a review
+   round, so count reviews in the price.
 10. A tier 2 reviewer for tier 1 and 2 work at `high`: at the corrected price (sonnet's cache reads
     are half of opus's) it halves the largest cost of a run, if it still finds the defects the
     tier 3 reviewer found in the 2026-09-13 and 2026-10-24 cells.

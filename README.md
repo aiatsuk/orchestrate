@@ -41,8 +41,8 @@ For a fully autonomous Codex run see the launch line in `skill/references/harnes
 | Tier | Claude Code | Codex | Use for |
 |------|-------------|-------|---------|
 | 1 mechanical | haiku, medium | gpt-5.6-luna, xhigh | fully specified edits with a reference file and a runnable check |
-| 2 standard | sonnet, xhigh | gpt-5.6-sol, xhigh | implementation from a clear spec; reviews of tier 1 and 2 work |
-| 3 structural | opus, high | gpt-6-astra, low | structural refactors, hard bugs; reviews of tier 3 work and of the integrated whole |
+| 2 standard | sonnet, high (reviews at xhigh) | gpt-5.6-sol, xhigh | implementation from a clear spec; reviews of tier 1 and 2 work |
+| 3 structural | opus, medium (reviews at high) | gpt-6-astra, low | structural refactors, hard bugs; reviews of tier 3 work and of the integrated whole |
 | orchestrator | the session's model (fable for large runs, else opus), high | gpt-6-astra, high | planning, specs, verification decisions |
 | top rung | fable, medium | the orchestrator's row | one subagent, once, for a task that failed at tier 3 |
 

@@ -7,6 +7,10 @@ All notable changes to the skill. The format follows Keep a Changelog; versions 
 The orchestrator follows the session's model, and the rung above tier 3 has a name.
 
 ### Changed
+- Routing: implementers run one level lower, reviewers stay where they were. Tier 2 sonnet
+  implements at `high` and reviews at `xhigh`; tier 3 opus implements at `medium` and reviews at
+  `high`. Evidence: `evals/results/2026-11-10-tier-efforts.md` (twelve replay cells, all passed at
+  round zero; tier 3 at `medium` cost about a quarter less than the same-day control at `high`).
 - The skill's frontmatter says `model: inherit` (effort `high` stays). A frontmatter pin lasts one
   turn while a run spans many, so the 0.9.0 pin to opus covered only the planning turn; on a
   session that runs a higher model it moved that turn down a tier and re-wrote the prompt cache on
@@ -20,11 +24,14 @@ The orchestrator follows the session's model, and the rung above tier 3 has a na
   how to keep exploration on a small model, and what an unset effort means off the session's model.
 
 ### Added
+- `routing.json`: an optional `review_effort` per tier, the level that tier reviews at;
+  `plan.py` uses it for the conformance lens, the tie-break and an adversary moved to that tier.
+  A tier without it reviews at its own effort, as before.
 - `evals/results/2026-11-10-model-guide.md`: the published guide, the harness documentation and
   local usage data checked against the routing table, with the cells to measure next.
 - Hypotheses 7 to 11 in `references/routing.md`: the top rung, the next model up at a lower effort
-  for tier 2, low first and high on failure, a tier 2 reviewer at the corrected price, and a named
-  effort for the adversary. The tier rows and `routing.json` are unchanged.
+  for tier 2 (measured and rejected), rework one level up, a tier 2 reviewer at the corrected price,
+  and a named effort for the adversary.
 
 ## [0.9.0] - 2026-10-24
 

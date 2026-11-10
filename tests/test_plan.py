@@ -33,7 +33,13 @@ def step(harness, tier):
 
 
 def lens(key, harness, tier):
-    return {"key": key, **step(harness, tier)}
+    entry = ROUTING[harness]["tiers"][str(tier)]
+    return {"key": key, "model": entry["model"], "effort": entry.get("review_effort", entry["effort"])}
+
+
+def review_step(harness, tier):
+    found = lens("x", harness, tier)
+    return {"model": found["model"], "effort": found["effort"]}
 
 
 def adversary(harness):
@@ -463,13 +469,13 @@ class WorkflowArgsTests(TempDirCase):
         self.assertNotEqual(adversary("claude")["model"], model("claude", 3))  # the routing this case relies on
         self.assertEqual(tasks["safe"]["lenses"], [lens("conformance", "claude", 3)])
         self.assertEqual(tasks["risky"]["lenses"], [lens("conformance", "claude", 3), adversary("claude")])
-        self.assertEqual(tasks["risky"]["confirm"], step("claude", 3))
+        self.assertEqual(tasks["risky"]["confirm"], review_step("claude", 3))
 
     def test_adversary_moves_off_the_conformance_model(self):
         self.assertEqual(adversary("claude")["model"], model("claude", 2))  # the routing this case relies on
         tasks = self.by_id(self.args_for(make_plan(self.root, task("a", reviewer_tier=2, risk=["security"]))))
         self.assertEqual(tasks["a"]["lenses"], [lens("conformance", "claude", 2), lens("adversary", "claude", 3)])
-        self.assertEqual(tasks["a"]["confirm"], step("claude", 2))
+        self.assertEqual(tasks["a"]["confirm"], review_step("claude", 2))
 
     def test_adversary_equal_to_tier_three_conformance_uses_tier_two(self):
         skill = self.root / "skill"
@@ -493,13 +499,59 @@ class WorkflowArgsTests(TempDirCase):
         self.assertIsNone(out["utility"])
 
     def test_claude_tiers_carry_their_efforts_into_chains_and_lenses(self):
-        self.assertEqual([ROUTING["claude"]["tiers"][t]["effort"] for t in "123"], ["medium", "xhigh", "high"])
+        self.assertEqual([ROUTING["claude"]["tiers"][t]["effort"] for t in "123"], ["medium", "high", "medium"])
         plan = make_plan(self.root, task("a", tier=1, reviewer_tier=2), task("b", tier=3, risk=["data"]))
         tasks = self.by_id(self.args_for(plan))
         self.assertEqual(tasks["a"]["chain"][0], {"tier": 1, "model": "haiku", "effort": "medium"})
         self.assertEqual(tasks["a"]["lenses"], [lens("conformance", "claude", 2)])
-        self.assertEqual(tasks["b"]["chain"], [{"tier": 3, "model": "opus", "effort": "high"}])
+        self.assertEqual(tasks["b"]["chain"], [{"tier": 3, "model": "opus", "effort": "medium"}])
         self.assertEqual(tasks["b"]["lenses"], [lens("conformance", "claude", 3), adversary("claude")])
+
+    def test_a_tier_reviews_at_its_review_effort_and_implements_at_its_effort(self):
+        # The implementer levels were measured against reviewers at these levels; a reviewer must not
+        # follow an implementer's level down.
+        plan = make_plan(self.root, task("a", tier=1, reviewer_tier=2), task("b", tier=2),
+                         task("c", tier=3, risk=["data"]), harness="claude")
+        out = self.args_for(plan)
+        tasks = self.by_id(out)
+        self.assertEqual(tasks["b"]["chain"], [{"tier": 2, "model": "sonnet", "effort": "high"},
+                                               {"tier": 3, "model": "opus", "effort": "medium"}])
+        self.assertEqual(tasks["a"]["lenses"], [{"key": "conformance", "model": "sonnet", "effort": "xhigh"}])
+        self.assertEqual(tasks["b"]["lenses"], [{"key": "conformance", "model": "opus", "effort": "high"}])
+        self.assertEqual(tasks["b"]["confirm"], {"model": "opus", "effort": "high"})
+        # A risky tier 3 task: the adversary is on another model, and the conformance lens keeps `high`.
+        self.assertEqual(tasks["c"]["lenses"][0], {"key": "conformance", "model": "opus", "effort": "high"})
+        self.assertNotEqual(tasks["c"]["lenses"][1]["model"], "opus")
+        for entry in tasks.values():
+            for item in [*entry["chain"], *entry["lenses"], entry["confirm"]]:
+                self.assertNotIn("review_effort", item)
+
+    def test_a_tier_without_a_review_effort_reviews_at_its_own_effort(self):
+        for absent in ("missing", None, ""):
+            with self.subTest(review_effort=absent):
+                routing = json.loads(json.dumps(ROUTING))
+                for entry in routing["claude"]["tiers"].values():
+                    if absent == "missing":
+                        entry.pop("review_effort", None)
+                    else:
+                        entry["review_effort"] = absent
+                self.assertEqual(planmod.lenses_for(routing["claude"], routing, 3, []),
+                                 [{"key": "conformance", "model": "opus", "effort": "medium"}])
+                # A moved adversary falls back the same way: the shipped one shares tier 2's model.
+                self.assertEqual(planmod.lenses_for(routing["claude"], routing, 2, ["data"])[1],
+                                 {"key": "adversary", "model": "opus", "effort": "medium"})
+                routing["claude"]["adversary"] = {"model": "opus", "effort": None}
+                self.assertEqual(planmod.lenses_for(routing["claude"], routing, 3, ["data"])[1],
+                                 {"key": "adversary", "model": "sonnet", "effort": "high"})
+
+    def test_a_moved_adversary_takes_the_review_effort_of_its_new_tier(self):
+        # The shipped adversary shares tier 2's model, so for a tier 2 reviewer it moves to tier 3.
+        self.assertEqual(planmod.lenses_for(ROUTING["claude"], ROUTING, 2, ["data"])[1],
+                         {"key": "adversary", "model": "opus", "effort": "high"})
+        routing = json.loads(json.dumps(ROUTING))
+        routing["claude"]["adversary"] = {"model": "opus", "effort": None}
+        self.assertEqual(planmod.lenses_for(routing["claude"], routing, 3, ["data"])[1],
+                         {"key": "adversary", "model": "sonnet", "effort": "xhigh"})
 
     def test_missing_roles_give_null_agent_types_and_inline_role_text(self):
         out = self.args_for(make_plan(self.root))
