@@ -40,9 +40,15 @@ class RoutingTests(unittest.TestCase):
             with self.subTest(harness=harness):
                 h = self.routing[harness]
                 self.assertEqual(sorted(h["tiers"]), ["1", "2", "3"])
-                for entry in [*h["tiers"].values(), h["adversary"]] + ([h["utility"]] if h["utility"] else []):
+                for entry in [h["adversary"]] + ([h["utility"]] if h["utility"] else []):
                     self.assertEqual(sorted(entry), ["effort", "model"])
                     self.assertTrue(entry["model"])
+                for entry in h["tiers"].values():
+                    # `review_effort` is optional: the level this tier reviews at, when it differs.
+                    self.assertEqual(sorted(set(entry) - {"review_effort"}), ["effort", "model"])
+                    self.assertTrue(entry["model"])
+                    if "review_effort" in entry:
+                        self.assertIn(entry["review_effort"], ("low", "medium", "high", "xhigh", "max"))
                 self.assertIn(h["reviewer_default_tier"], (1, 2, 3))
         self.assertIsNone(self.routing["codex"]["utility"])
         self.assertTrue(set(self.routing["risky_tags"]) <= set(self.routing["risk_tags"]))

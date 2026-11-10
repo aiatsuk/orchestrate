@@ -121,13 +121,14 @@ same files run in sequence, never in parallel; 3 to 8 tasks per wave. Tag a task
 | Tier | Claude Code | Codex | Use for | Never for |
 |------|-------------|-------|---------|-----------|
 | 1 mechanical | `haiku`, medium | `gpt-5.6-luna`, xhigh | Fully specified edits with an exact reference file and a runnable check: simple unit tests, renames, localization keys, boilerplate, surveys. | Design judgment, multi-file wiring, cases derived from stream or timer semantics. |
-| 2 standard | `sonnet`, xhigh | `gpt-5.6-sol`, xhigh | Implementation from a clear spec: routes, screens, tests including async ones (with the discriminating-test criterion), behaviour-preserving refactors across a few files, docs. Reviews of tier 1 and 2 work. | Structural refactors across many files; features spanning modules. |
-| 3 structural | `opus`, high | `gpt-6-astra`, low | Structural refactors, feature modules, hard bugs, anything tier 2 failed twice. Reviews of tier 3 work and of the integrated whole. | Nothing in principle; do not avoid it when the task is hard. |
+| 2 standard | `sonnet`, high (reviews at xhigh) | `gpt-5.6-sol`, xhigh | Implementation from a clear spec: routes, screens, tests including async ones (with the discriminating-test criterion), behaviour-preserving refactors across a few files, docs. Reviews of tier 1 and 2 work. | Structural refactors across many files; features spanning modules. |
+| 3 structural | `opus`, medium (reviews at high) | `gpt-6-astra`, low | Structural refactors, feature modules, hard bugs, anything tier 2 failed twice. Reviews of tier 3 work and of the integrated whole. | Nothing in principle; do not avoid it when the task is hard. |
 | orchestrator | the session's model, high: `fable` for a run that leads many agents or a major migration, else `opus` | `gpt-6-astra`, high | Planning, specs, verification decisions. | Routine implementation. |
 | top rung | `fable`, medium | the orchestrator's row | One subagent, once, for a task that failed at tier 3. | Anything tier 3 has not failed. |
 
 Reviewer tier: at least the implementer's tier. `routing.json` is the machine-readable copy of the
-tier rows (plus the adversary and utility models) that `plan.py` reads; change both together. If the
+tier rows (a tier's `review_effort` is the level it reviews at; plus the adversary and utility models)
+that `plan.py` reads; change both together. If the
 session's model is below the tier 3 model, stop and ask the user to switch before planning. Measured
 results and open hypotheses: `references/routing.md`.
 

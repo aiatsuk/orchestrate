@@ -539,19 +539,26 @@ def _step(harness_routing: dict, tier: int) -> dict:
     return {"model": entry["model"], "effort": entry.get("effort")}
 
 
+def _lens(harness_routing: dict, tier: int) -> dict:
+    """A tier as a reviewer: its model at `review_effort`, or at the tier's effort when it names none
+    (a missing, null or empty `review_effort` all mean none)."""
+    entry = harness_routing["tiers"][str(tier)]
+    return {"model": entry["model"], "effort": entry.get("review_effort") or entry.get("effort")}
+
+
 def chain_for(harness_routing: dict, tier: int) -> list[dict]:
     return [{"tier": t, **_step(harness_routing, t)} for t in range(tier, 4)]
 
 
 def lenses_for(harness_routing: dict, routing: dict, reviewer_tier: int, risk: list[str]) -> list[dict]:
-    conformance = _step(harness_routing, reviewer_tier)
+    conformance = _lens(harness_routing, reviewer_tier)
     lenses = [{"key": "conformance", **conformance}]
     if set(risk) & set(routing.get("risky_tags", [])):
         adversary = harness_routing["adversary"]
         adversary = {"model": adversary["model"], "effort": adversary.get("effort")}
         if adversary["model"] == conformance["model"]:
-            top = _step(harness_routing, 3)
-            adversary = _step(harness_routing, 2) if conformance["model"] == top["model"] else top
+            top = _lens(harness_routing, 3)
+            adversary = _lens(harness_routing, 2) if conformance["model"] == top["model"] else top
         lenses.append({"key": "adversary", **adversary})
     return lenses
 
