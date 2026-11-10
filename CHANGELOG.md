@@ -2,6 +2,30 @@
 
 All notable changes to the skill. The format follows Keep a Changelog; versions follow semantic versioning.
 
+## [0.10.0] - 2026-11-10
+
+The orchestrator follows the session's model, and the rung above tier 3 has a name.
+
+### Changed
+- The skill's frontmatter says `model: inherit` (effort `high` stays). A frontmatter pin lasts one
+  turn while a run spans many, so the 0.9.0 pin to opus covered only the planning turn; on a
+  session that runs a higher model it moved that turn down a tier and re-wrote the prompt cache on
+  each switch. Start a run in a fresh session on the model that should lead it: fable for a run
+  that leads many agents or a major migration, opus otherwise. A session below the tier 3 model
+  is refused before planning.
+- A task that failed at tier 3 goes once to the top rung, fable at `medium`, instead of to "the
+  orchestrator tier", which on an opus session repeated tier 3. By decision from the published
+  model guide (the next model up at a lower effort); not yet measured here.
+- `references/harness-claude.md`: how to pick the session model, why not to switch during a run,
+  how to keep exploration on a small model, and what an unset effort means off the session's model.
+
+### Added
+- `evals/results/2026-11-10-model-guide.md`: the published guide, the harness documentation and
+  local usage data checked against the routing table, with the cells to measure next.
+- Hypotheses 7 to 11 in `references/routing.md`: the top rung, the next model up at a lower effort
+  for tier 2, low first and high on failure, a tier 2 reviewer at the corrected price, and a named
+  effort for the adversary. The tier rows and `routing.json` are unchanged.
+
 ## [0.9.0] - 2026-10-24
 
 Fewer delegated runs for small work, and checks that make tier 1 safe to use.
