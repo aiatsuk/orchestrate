@@ -397,6 +397,10 @@ function signalGroup(pgid, signal) {
 
 // A group is alive while one of its members has not exited: members that exited but were not
 // reaped yet (zombies, state Z) do not count. When ps cannot answer, an existing group counts as alive.
+// The whole process table can exceed the 1 MiB default on a busy machine; an overflow would read as
+// "no such group" and hide a live leftover.
+const PS_MAX_BUFFER = 64 * 1024 * 1024
+
 function groupAlive(pgid) {
   try {
     process.kill(-pgid, 0)
@@ -404,7 +408,7 @@ function groupAlive(pgid) {
     if (error.code !== 'EPERM') return false
   }
   try {
-    const out = childProcess.execFileSync('ps', ['-A', '-o', 'pgid=,stat='], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+    const out = childProcess.execFileSync('ps', ['-A', '-o', 'pgid=,stat='], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: PS_MAX_BUFFER })
     return out.split('\n').map(line => line.trim().split(/\s+/)).some(([group, state]) => Number(group) === pgid && state && !state.startsWith('Z'))
   } catch (error) {
     return true
@@ -423,7 +427,7 @@ function processStart(pid) {
 
 function groupMembers(pgid) {
   try {
-    const out = childProcess.execFileSync('ps', ['-A', '-o', 'pid=,pgid=,command='], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+    const out = childProcess.execFileSync('ps', ['-A', '-o', 'pid=,pgid=,command='], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: PS_MAX_BUFFER })
     return out.split('\n').map(line => line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/))
       .filter(m => m && Number(m[2]) === pgid).map(m => `${m[1]} ${m[3]}`)
   } catch (error) {
