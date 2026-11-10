@@ -23,6 +23,11 @@ The orchestrator follows the session's model, and the rung above tier 3 has a na
 - `references/harness-claude.md`: how to pick the session model, why not to switch during a run,
   how to keep exploration on a small model, and what an unset effort means off the session's model.
 
+### Fixed
+- `run_workflow.js` reads the process table with a 64 MiB buffer. On a machine with a few thousand
+  processes the listing passed the 1 MiB default, the read failed silently, and a live leftover
+  process group was listed as "members unknown" instead of with its processes.
+
 ### Added
 - `routing.json`: an optional `review_effort` per tier, the level that tier reviews at;
   `plan.py` uses it for the conformance lens, the tie-break and an adversary moved to that tier.
